@@ -15,8 +15,7 @@ var _config := ConfigFile.new()
 
 func _ready() -> void:
 	_config.load(SETTINGS_PATH)
-	var background := ColorRect.new()
-	background.color = Color("0c1425")
+	var background := preload("res://Scripts/FantasyMenuBackground.gd").new()
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
@@ -24,8 +23,11 @@ func _ready() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(640, 0)
-	panel.add_theme_stylebox_override("panel", _style(INK, 28, 28))
+	panel.custom_minimum_size = Vector2(1440, 0)
+	var panel_style := _style(Color(0.035, 0.055, 0.10, 0.86), 18, 36)
+	panel_style.set_border_width_all(1)
+	panel_style.border_color = Color(0.78, 0.61, 0.32, 0.55)
+	panel.add_theme_stylebox_override("panel", panel_style)
 	center.add_child(panel)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 20)
@@ -39,8 +41,8 @@ func _ready() -> void:
 		chip.custom_minimum_size = Vector2(48, 6)
 		chip.add_theme_stylebox_override("panel", _style(color, 3, 0))
 		colors.add_child(chip)
-	content.add_child(_label("LUDO", 52, Color.WHITE))
-	content.add_child(_label("Dua dadu. Banyak kemungkinan.", 16, Color("aab8d0")))
+	content.add_child(_label("Ludo Heroes", 52, GOLD))
+	content.add_child(_label("Empat faksi. Satu takdir.", 16, Color("aab8d0")))
 	var dice_row := HBoxContainer.new()
 	dice_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	dice_row.add_theme_constant_override("separation", 14)
@@ -48,11 +50,13 @@ func _ready() -> void:
 	for face in [3, 6]:
 		var die := TextureRect.new()
 		die.texture = load("res://Arts/Textures_Game/Dices/Dice_%d.png" % face)
-		die.custom_minimum_size = Vector2(96, 96)
+		die.custom_minimum_size = Vector2(56, 56)
 		die.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		die.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		dice_row.add_child(die)
 	_home = VBoxContainer.new()
+	_home.custom_minimum_size.x = 560
+	_home.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_home.add_theme_constant_override("separation", 10)
 	content.add_child(_home)
 	_start = _button("Start", _show_color_selection, true)
@@ -62,23 +66,24 @@ func _ready() -> void:
 	_color_selection = VBoxContainer.new()
 	_color_selection.add_theme_constant_override("separation", 10)
 	content.add_child(_color_selection)
-	_color_selection.add_child(_label("PILIH WARNA KAMU", 24, Color.WHITE))
+	_color_selection.add_child(_label("PILIH FAKSI KAMU", 24, Color.WHITE))
 	var color_grid := GridContainer.new()
-	color_grid.columns = 2
+	color_grid.columns = 4
 	color_grid.add_theme_constant_override("h_separation", 16)
 	color_grid.add_theme_constant_override("v_separation", 16)
 	_color_selection.add_child(color_grid)
 	var palette := [Color("29975a"), Color("e7ba19"), Color("168ccd"), Color("d93c40")]
+	var factions := ["Thornvale", "Nekravia", "Nerathis", "Astherion"]
 	for index in range(4):
-		var choice := _button(["Hijau", "Kuning", "Biru", "Merah"][index], _choose_color.bind(index))
-		choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		choice.custom_minimum_size = Vector2(280, 90)
-		choice.add_theme_stylebox_override("normal", _style(palette[index], 12, 10))
-		choice.add_theme_color_override("font_color", INK if index == 1 else Color.WHITE)
-		color_grid.add_child(choice)
-	_color_selection.add_child(_button("Kembali", _cancel_color_selection))
+		color_grid.add_child(_faction_button(factions[index], index, palette[index]))
+	var back := _button("Kembali", _cancel_color_selection)
+	back.custom_minimum_size = Vector2(320, 64)
+	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_color_selection.add_child(back)
 	_color_selection.hide()
 	_settings = VBoxContainer.new()
+	_settings.custom_minimum_size.x = 560
+	_settings.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_settings.add_theme_constant_override("separation", 12)
 	_settings.hide()
 	content.add_child(_settings)
@@ -105,6 +110,41 @@ func _ready() -> void:
 	content.add_child(_label("MAIN BERSAMA • 2 DADU PER GILIRAN", 12, Color("8394b2")))
 	_start.grab_focus()
 
+func _faction_button(faction_name: String, color: GameManager.PlayerColor, accent: Color) -> Button:
+	var choice := _button("", _choose_color.bind(color))
+	choice.tooltip_text = faction_name
+	choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	choice.custom_minimum_size = Vector2(320, 390)
+	for state in ["normal", "hover", "pressed"]:
+		var background := Color("182337")
+		if state == "hover":
+			background = Color("30445b")
+		elif state == "pressed":
+			background = Color("1c2c44")
+		var style := _style(background, 12, 10)
+		style.set_border_width_all(2)
+		style.border_color = accent
+		choice.add_theme_stylebox_override(state, style)
+	var content := VBoxContainer.new()
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.offset_left = 12
+	content.offset_top = 10
+	content.offset_right = -12
+	content.offset_bottom = -10
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	choice.add_child(content)
+	var flag := TextureRect.new()
+	flag.texture = load("res://Arts/Textures_Game/Factions/%s.png" % faction_name)
+	flag.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	flag.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	flag.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	flag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(flag)
+	var caption := _label(faction_name, 18, Color.WHITE)
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(caption)
+	return choice
+
 func _style(color: Color, radius: int, margin: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
@@ -129,8 +169,8 @@ func _button(value: String, action: Callable, primary: bool = false) -> Button:
 	button.custom_minimum_size.y = 84
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	button.add_theme_font_size_override("font_size", 30)
-	button.add_theme_stylebox_override("normal", _style(GOLD if primary else Color("24344f"), 12, 10))
-	button.add_theme_stylebox_override("hover", _style(Color("ffdb91") if primary else Color("354c70"), 12, 10))
+	button.add_theme_stylebox_override("normal", _style(GOLD if primary else Color("182337"), 12, 10))
+	button.add_theme_stylebox_override("hover", _style(Color("ffdb91") if primary else Color("30445b"), 12, 10))
 	button.add_theme_stylebox_override("pressed", _style(Color("d8a94b") if primary else Color("1c2c44"), 12, 10))
 	var focus := _style(Color.TRANSPARENT, 12, 10)
 	focus.set_border_width_all(2)
