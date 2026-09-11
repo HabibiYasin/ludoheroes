@@ -9,15 +9,20 @@ func _run() -> void:
 	add_child(game)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
 	var paths := board.way_points
+	assert(paths.green_path[0] == paths.main_path.get_node("1"))
+	assert(paths.green_path[0].isThisSafePlace)
+	assert(paths.green_path[1] == paths.main_path.get_node("2"))
 	for color in range(4):
 		var hero: Piece = board.piecesManager.GetPieceGroupBasedOnType(color).Pieces[0]
 		var path: Array[WayPoint] = paths.GetPath(color)
-		assert(path.size() == 57)
-		assert(path[50].get_parent() == paths.main_path)
-		assert(path[51].get_parent() != paths.main_path)
+		assert(path.size() == [63, 64, 63, 64][color])
+		var home_count := 6 if color == GameManager.PlayerColor.Blue else 7
+		var last_shared := path.size() - home_count - 1
+		assert(path[last_shared].get_parent() == paths.main_path)
+		assert(path[last_shared + 1].get_parent() != paths.main_path)
 		assert(paths.GetWayPoint(-1, color) == null)
 		assert(paths.GetWayPoint(path.size(), color) == null)
-		# Visit every configured cell, including the previously failing index 51.
+		# Visit every configured cell, including the transition into the home lane.
 		for index in range(path.size()):
 			if hero.CurrentWayPoint != null:
 				hero.CurrentWayPoint.RemoveMyRef(hero)
@@ -30,14 +35,14 @@ func _run() -> void:
 		# Exercise actual movement into home and ensure the remaining die is usable.
 		while int(board.currentPlayerColor) != color:
 			board.UpdatePlayerTurn()
-		hero.SetCurrentPositionAndCheckKill(50)
-		board._on_dice_root_on_dice_rolled([1, 5])
+		hero.SetCurrentPositionAndCheckKill(last_shared)
+		board._on_dice_root_on_dice_rolled([1, home_count - 1])
 		await board._on_player_select_piece(hero)
-		assert(hero.CurrentPosition == 51 and hero.CurrentWayPoint == path[51])
-		assert(board.remainingDice == [0, 5])
+		assert(hero.CurrentPosition == last_shared + 1 and hero.CurrentWayPoint == path[last_shared + 1])
+		assert(board.remainingDice == [0, home_count - 1])
 		await board._on_player_select_piece(hero)
-		assert(hero.CurrentPosition == 56 and hero.IsInHome)
+		assert(hero.CurrentPosition == path.size() - 1 and hero.IsInHome)
 		assert(hero.CurrentState == GameManager.PieceStateEnum.InHouse)
 		hero.SendBackToLobby()
-		print("PASS: all 57 waypoints and home entry/finish for color ", color)
+		print("PASS: all configured waypoints and home entry/finish for color ", color)
 	get_tree().quit()
