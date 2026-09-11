@@ -3,6 +3,9 @@ extends Node2D
 
 const HeroCatalog = preload("res://Scripts/HeroCatalog.gd")
 const HERO_DISPLAY_SCALE := 0.8
+const FinishCelebration = preload("res://Scripts/FinishCelebration.gd")
+var finish_marker: Node2D
+var _finish_presented := false
 signal StatsChanged
 
 @export var HeroId: String = ""
@@ -78,6 +81,7 @@ func SetSharedCellLayout(offset: Vector2, slot_size: Vector2 = Vector2.ZERO) -> 
 	PieceSprite.position = _normal_sprite_position + offset / scale
 
 func SetStartPosition(index: int) -> void:
+	_reset_finish_presentation()
 	StartingPosition = index
 	CurrentPosition = -1
 	CurrentState = GameManager.PieceStateEnum.InLobby
@@ -98,6 +102,7 @@ func SetCurrentPositionAndCheckKill(index: int) -> void:
 		wayPointManager.SetPieceToThisWayPoint(index, self)
 
 func SendBackToLobby() -> void:
+	_reset_finish_presentation()
 	if CurrentWayPoint != null:
 		CurrentWayPoint.RemoveMyRef(self)
 
@@ -129,6 +134,8 @@ func CanMoveWithDice(dice_value: int, path_count: int) -> bool:
 	return target_position < path_count
 
 func _unhandled_input(event: InputEvent) -> void:
+	if IsInHome or not is_visible_in_tree():
+		return
 	# Let board clicks reach Dice while a human player is waiting to roll.
 	var input_board: BoardManager = get_tree().get_first_node_in_group("BoardManager")
 	if input_board != null and input_board.IsHumanTurn() and GameManager.GameCurrentState == GameManager.GameStateEnum.PlayerCanRollDice:
@@ -163,3 +170,41 @@ func PlayAnimation() -> void:
 func StopAnimation() -> void:
 	if animation_PieceSelect != null:
 		animation_PieceSelect.stop()
+
+func CelebrateFinish() -> void:
+	if not IsInHome or _finish_presented:
+		return
+	_finish_presented = true
+	StopAnimation()
+	if CurrentWayPoint != null:
+		CurrentWayPoint.RemoveMyRef(self)
+		CurrentWayPoint = null
+	var fireworks := FinishCelebration.new()
+	match CurrentPlayerColor:
+		GameManager.PlayerColor.Blue: fireworks.team_color = Color("44bcff")
+		GameManager.PlayerColor.Red: fireworks.team_color = Color("ff6262")
+		GameManager.PlayerColor.Yellow: fireworks.team_color = Color("ffdf38")
+		GameManager.PlayerColor.Green: fireworks.team_color = Color("46ef91")
+	get_parent().add_child(fireworks)
+	fireworks.position = position
+	fireworks.z_index = 20
+	var fade := create_tween()
+	fade.tween_property(self, "modulate:a", 0.0, 0.35)
+	await fade.finished
+	hide()
+	finish_marker = FinishCelebration.new()
+	finish_marker.marker = true
+	get_parent().add_child(finish_marker)
+	finish_marker.position = LobbyPosition
+	finish_marker.scale = Vector2.ONE * 1.85
+	finish_marker.global_rotation = 0.0
+	finish_marker.z_index = 10
+	await get_tree().create_timer(0.75, false).timeout
+
+func _reset_finish_presentation() -> void:
+	if is_instance_valid(finish_marker):
+		finish_marker.queue_free()
+	finish_marker = null
+	_finish_presented = false
+	modulate.a = 1.0
+	show()

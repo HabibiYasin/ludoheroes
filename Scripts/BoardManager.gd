@@ -147,6 +147,7 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 	# WayPoint marks IsInHome when the final/home waypoint is reached.
 	if moveThisPiece.IsInHome:
 		moveThisPiece.CurrentState = GameManager.PieceStateEnum.InHouse
+		await moveThisPiece.CelebrateFinish()
 	else:
 		moveThisPiece.CurrentState = GameManager.PieceStateEnum.InWayPoint
 

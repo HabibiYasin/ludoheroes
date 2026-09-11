@@ -38,6 +38,8 @@ func _update_layout() -> void:
 	for group in $CoreGamplay/Pieces.get_children():
 		for piece: Piece in group.Pieces:
 			piece.global_rotation = 0.0
+			if is_instance_valid(piece.finish_marker):
+				piece.finish_marker.global_rotation = 0.0
 	var dice: Node2D = $CoreGamplay/Dice/DiceRoot
 	dice.global_rotation = 0.0
 	dice.global_position = origin + Vector2(230, 872) * fit
