@@ -15,6 +15,7 @@ var currentPlayerColor: GameManager.PlayerColor
 
 var remainingDice: Array[int] = []
 var selectedDiceIndex: int = -1
+var attack_presentation: CanvasLayer
 
 signal DiceSelectionChanged(values: Array[int], selected_index: int)
 signal OnHasKill
@@ -22,6 +23,8 @@ signal ManualAction
 signal TurnFinished(color: GameManager.PlayerColor)
 
 func _ready() -> void:
+	attack_presentation = preload("res://Scripts/AttackPresentation.gd").new()
+	add_child(attack_presentation)
 	HumanPlayerColor = GameManager.LocalPlayerColor
 	currentPlayerTurnIndex = int(HumanPlayerColor) - 1
 	GameManager.OnPlayerSelectPiece.connect(_on_player_select_piece)
@@ -163,6 +166,7 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 func _wait_for_kill_if_needed() -> void:
 	if hasKill:
 		await OnHasKill
+	await attack_presentation.play_pending()
 
 func FinishTurn() -> void:
 	TurnFinished.emit(currentPlayerColor)

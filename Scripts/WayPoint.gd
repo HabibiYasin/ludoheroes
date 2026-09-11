@@ -24,6 +24,8 @@ func SetPiece(piece: Piece) -> void:
 		boardManager.DetectKill(null)
 
 	var captured_piece := _find_capturable_opponent(piece)
+	if captured_piece != null and piece.Attack > 0 and boardManager != null:
+		boardManager.attack_presentation.queue_attack(piece, captured_piece)
 	if captured_piece != null and captured_piece.TakeDamage(piece.Attack):
 		myHoldings.erase(captured_piece)
 		captured_piece.SetSharedCellLayout(Vector2.ZERO)
