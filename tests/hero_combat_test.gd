@@ -70,4 +70,39 @@ func _run() -> void:
 	assert(not target.TakeDamage(-2) and target.Health == 4)
 	assert(target.TakeDamage(99) and target.Health == 0)
 	print("PASS: 16 hero classes/stats, damage, surviving shared cell, lethal landing, dice continuation, base return, respawn, live HUD, safe/friendly cells, zero attack and HP clamp")
+	_test_highest_health_target()
 	get_tree().quit()
+func _test_highest_health_target() -> void:
+	var cell := WayPoint.new()
+	var heroes: Array[Piece] = []
+	for hp in [2, 5, 5, 9, 0]:
+		var hero := Piece.new()
+		hero.Health = hp
+		hero.MaxHealth = 10
+		hero.CurrentPlayerColor = GameManager.PlayerColor.Red
+		heroes.append(hero)
+		cell.myHoldings.append(hero)
+	heroes[3].CurrentPlayerColor = GameManager.PlayerColor.Green
+	var attacker := Piece.new()
+	attacker.CurrentPlayerColor = GameManager.PlayerColor.Green
+	attacker.Attack = 1
+	cell.SetPiece(attacker)
+	assert(heroes[0].Health == 2)
+	assert(heroes[1].Health == 4)
+	assert(heroes[2].Health == 5)
+	assert(heroes[3].Health == 9 and heroes[4].Health == 0)
+	cell.SetPiece(attacker)
+	assert(heroes[1].Health == 4)
+	cell.RemoveMyRef(attacker)
+	cell.SetPiece(attacker)
+	assert(heroes[1].Health == 4 and heroes[2].Health == 4)
+	cell.RemoveMyRef(attacker)
+	cell.isThisSafePlace = true
+	cell.SetPiece(attacker)
+	assert(heroes[1].Health == 4 and heroes[2].Health == 4)
+	cell.ClearMe()
+	for hero in heroes:
+		hero.free()
+	attacker.free()
+	cell.free()
+	print("PASS: single highest-current-health target, stable ties, allies/dead excluded, safe cells")

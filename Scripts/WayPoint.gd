@@ -59,14 +59,17 @@ func _find_capturable_opponent(incoming_piece: Piece) -> Piece:
 	if isThisSafePlace:
 		return null
 
+	var target: Piece = null
 	for item: Piece in myHoldings:
 		if item == incoming_piece:
 			continue
 
-		if item.CurrentPlayerColor != incoming_piece.CurrentPlayerColor:
-			return item
+		if item.CurrentPlayerColor == incoming_piece.CurrentPlayerColor or item.Health <= 0:
+			continue
+		if target == null or item.Health > target.Health:
+			target = item
 
-	return null
+	return target
 
 func ClearMe() -> void:
 	for piece in myHoldings:
