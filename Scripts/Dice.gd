@@ -78,8 +78,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		var sprite := sprites[index]
 		if sprite != null and sprite.is_pixel_opaque(sprite.get_local_mouse_position()):
 			if GameManager.GameCurrentState == GameManager.GameStateEnum.PlayerCanRollDice:
+				if _board != null:
+					_board.ManualAction.emit()
 				RollDice()
 			elif _board != null:
+				if index < _board.remainingDice.size() and _board.remainingDice[index] > 0:
+					_board.ManualAction.emit()
 				_board.SelectDie(index)
 			return
 

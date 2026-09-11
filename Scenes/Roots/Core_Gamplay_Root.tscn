@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://cmnljkkjubyya"]
+[gd_scene load_steps=7 format=3 uid="uid://cmnljkkjubyya"]
 
 [ext_resource type="PackedScene" uid="uid://rnbs1qysim1j" path="res://Scenes/board_game_play.tscn" id="1_jjkav"]
 [ext_resource type="PackedScene" uid="uid://bm2imeeg020if" path="res://Scenes/Roots/pieces_root.tscn" id="3_x1548"]
@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://wmq4blipinx5" path="res://Scenes/way_points_root.tscn" id="7_rw8h0"]
 
 [ext_resource type="Script" path="res://Scripts/BotController.gd" id="8_bot"]
+
+[ext_resource type="Script" path="res://Scripts/PlayerIdleController.gd" id="9_idle"]
 
 [node name="CoreGamplay" type="Node2D"]
 
@@ -27,6 +29,9 @@ IsAutoDiceRoll = false
 
 [node name="BotController" type="Node" parent="."]
 script = ExtResource("8_bot")
+
+[node name="PlayerIdleController" type="Node" parent="."]
+script = ExtResource("9_idle")
 
 [connection signal="OnDiceRollBegin" from="Dice/DiceRoot" to="Board/board_GamePlay" method="_on_dice_root_on_dice_roll_begin"]
 [connection signal="OnDiceRolled" from="Dice/DiceRoot" to="Board/board_GamePlay" method="_on_dice_root_on_dice_rolled"]

@@ -18,6 +18,8 @@ var selectedDiceIndex: int = -1
 
 signal DiceSelectionChanged(values: Array[int], selected_index: int)
 signal OnHasKill
+signal ManualAction
+signal TurnFinished(color: GameManager.PlayerColor)
 
 func _ready() -> void:
 	HumanPlayerColor = GameManager.LocalPlayerColor
@@ -30,7 +32,7 @@ func GetPathCount(player_color: GameManager.PlayerColor) -> int:
 		return 0
 	return way_points.GetCount(player_color)
 
-func _on_player_select_piece(value: Piece) -> void:
+func _on_player_select_piece(value: Piece, manual: bool = false) -> void:
 	if GameManager.GameCurrentState != GameManager.GameStateEnum.PlayerSelectPiece:
 		return
 
@@ -47,6 +49,8 @@ func _on_player_select_piece(value: Piece) -> void:
 		return
 
 	StopPieceAnimation()
+	if manual:
+		ManualAction.emit()
 	await MovePieces(currentDiceValue, value, use_pair)
 
 func CanSummonWithPair() -> bool:
@@ -145,6 +149,7 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 
 	var winner := piecesManager.GetWinner()
 	if winner != null:
+		TurnFinished.emit(currentPlayerColor)
 		GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.GameOver)
 		StopPieceAnimation()
 		if animation_PlayerForPlaces != null:
@@ -160,6 +165,7 @@ func _wait_for_kill_if_needed() -> void:
 		await OnHasKill
 
 func FinishTurn() -> void:
+	TurnFinished.emit(currentPlayerColor)
 	remainingDice.clear()
 	selectedDiceIndex = -1
 	DiceSelectionChanged.emit(remainingDice, selectedDiceIndex)

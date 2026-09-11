@@ -106,7 +106,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		GameManager.HeroInspected.emit(self)
 		var board: BoardManager = get_tree().get_first_node_in_group("BoardManager")
 		if board != null and board.IsHumanTurn() and GameManager.GameCurrentState == GameManager.GameStateEnum.PlayerSelectPiece:
-			AIInput()
+			board._on_player_select_piece(self, true)
 		get_viewport().set_input_as_handled()
 
 func AIInput() -> void:

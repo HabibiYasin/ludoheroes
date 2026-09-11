@@ -13,6 +13,9 @@ var emote: Label
 var emote_timer: Timer
 var config := ConfigFile.new()
 var settings_dirty := false
+var idle_controller: Node
+var idle_countdown: Label
+var idle_warning: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -65,10 +68,24 @@ func _ready() -> void:
 		var reaction: String = [":)  Senang", "GG!", ":O  Wow", ":(  Sedih"][i]
 		_button(reactions, reaction, Rect2(12 + (i % 2) * 184, 12 + (i / 2) * 72, 172, 62), _react.bind(reaction))
 	reactions.hide()
+	idle_controller = get_parent().get_node("CoreGamplay/PlayerIdleController")
+	idle_countdown = _label(root, "", Rect2(40, 122, 380, 38), 22, GOLD)
+	idle_warning = _label(root, "", Rect2(460, 40, 1000, 110), 26, GOLD)
+	idle_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	idle_warning.add_theme_stylebox_override("normal", _style(INK))
+	idle_warning.hide()
 	_build_menu()
 	GameManager.HeroInspected.connect(_inspect_hero)
 	get_viewport().size_changed.connect(_resize)
 	_resize()
+
+func _process(_delta: float) -> void:
+	if idle_controller == null:
+		return
+	idle_countdown.visible = idle_controller.WaitingForPlayer
+	idle_countdown.text = "Aksi otomatis dalam %d detik" % ceili(idle_controller.SecondsRemaining)
+	idle_warning.text = idle_controller.WarningText()
+	idle_warning.visible = not idle_warning.text.is_empty()
 
 func _resize() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
