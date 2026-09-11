@@ -1,5 +1,13 @@
 extends Node2D
 
+# Base rectangles measured in the 1254 x 1254 Heroes board artwork.
+# Its base areas are not square or symmetric like the original Ludo board.
+const PLACE_BOUNDS := {
+	"Yellow": Rect2(0, 0, 520, 487),
+	"Blue": Rect2(740, 0, 514, 487),
+	"Green": Rect2(0, 712, 520, 542),
+	"Red": Rect2(740, 712, 514, 542),
+}
 func _ready() -> void:
 	var hud := CanvasLayer.new()
 	hud.set_script(load("res://Scripts/GameplayHUD.gd"))
@@ -12,9 +20,21 @@ func _update_layout() -> void:
 	var fit := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
 	var origin := (viewport_size - Vector2(1920, 1080) * fit) * 0.5
 	var board_sprite: Sprite2D = $CoreGamplay/Board/board_GamePlay/Sprite2D_Board
-	$CoreGamplay.scale = Vector2.ONE * (1000.0 / board_sprite.texture.get_width()) * fit
+	$CoreGamplay.scale = Vector2.ONE * (1000.0 / 1804.0) * fit
 	$CoreGamplay.position = origin + Vector2(960, 540) * fit
 	$CoreGamplay.rotation = -float(GameManager.LocalPlayerColor) * PI * 0.5
+	# Keep faction emblems at the top regardless of the player's board rotation.
+	for color_name in ["Green", "Yellow", "Blue", "Red"]:
+		var place: Sprite2D = board_sprite.get_node("Sprite2D_" + color_name)
+		var bounds: Rect2 = PLACE_BOUNDS[color_name]
+		var artwork: Sprite2D = board_sprite.get_node("Artwork")
+		place.position = (bounds.get_center() - artwork.texture.get_size() * 0.5) * artwork.scale
+		var display_size := bounds.size * artwork.scale
+		# Upright art needs swapped dimensions when the board turns a quarter turn.
+		if int(GameManager.LocalPlayerColor) % 2 == 1:
+			display_size = Vector2(display_size.y, display_size.x)
+		place.scale = display_size / place.texture.get_size()
+		place.global_rotation = 0.0
 	for group in $CoreGamplay/Pieces.get_children():
 		for piece: Piece in group.Pieces:
 			piece.global_rotation = 0.0

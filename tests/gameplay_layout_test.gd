@@ -9,7 +9,7 @@ func _ready() -> void:
 	for resolution in [Vector2i(1920, 1080), Vector2i(2400, 1080), Vector2i(2520, 1080), Vector2i(1920, 1440)]:
 		viewport.size = resolution
 		await get_tree().process_frame
-		var sprite: Sprite2D = game.get_node("CoreGamplay/Board/board_GamePlay/Sprite2D_Board")
+		var sprite: Sprite2D = game.get_node("CoreGamplay/Board/board_GamePlay/Sprite2D_Board/Artwork")
 		var board_size := sprite.texture.get_size() * sprite.global_scale
 		var top_left := sprite.global_position - board_size * 0.5
 		var bottom_right := sprite.global_position + board_size * 0.5

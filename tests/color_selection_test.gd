@@ -17,6 +17,9 @@ func _run() -> void:
 		await get_tree().scene_changed
 		var game := get_tree().current_scene
 		var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
+		for color_name in ["Green", "Yellow", "Blue", "Red"]:
+			var place: Sprite2D = board.get_node("Sprite2D_Board/Sprite2D_" + color_name)
+			assert(is_zero_approx(place.global_rotation))
 		assert(int(board.HumanPlayerColor) == color)
 		assert(board.IsHumanTurn() and int(board.currentPlayerColor) == color)
 		var group := board.piecesManager.GetPieceGroupBasedOnType(board.HumanPlayerColor)
