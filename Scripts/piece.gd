@@ -2,6 +2,7 @@ class_name Piece
 extends Node2D
 
 const HeroCatalog = preload("res://Scripts/HeroCatalog.gd")
+const HERO_DISPLAY_SCALE := 0.8
 signal StatsChanged
 
 @export var HeroId: String = ""
@@ -59,6 +60,7 @@ func _ready() -> void:
 				scale *= fit_scale
 		PieceSprite.texture = PieceTexture
 	_normal_scale = scale
+	scale *= HERO_DISPLAY_SCALE
 	if PieceSprite != null:
 		_normal_sprite_position = PieceSprite.position
 	wayPointManager = get_tree().get_first_node_in_group("WayPointManagerGroup")
@@ -71,8 +73,8 @@ func SetSharedCellLayout(offset: Vector2, slot_size: Vector2 = Vector2.ZERO) -> 
 	var fit := 1.0
 	if slot_size != Vector2.ZERO:
 		var normal_size := PieceSprite.texture.get_size() * _normal_scale.abs()
-		fit = minf(1.0, minf(slot_size.x / normal_size.x, slot_size.y / normal_size.y))
-	scale = _normal_scale * fit
+		fit = 2.0 * minf(1.0, minf(slot_size.x / normal_size.x, slot_size.y / normal_size.y))
+	scale = _normal_scale * fit * HERO_DISPLAY_SCALE
 	PieceSprite.position = _normal_sprite_position + offset / scale
 
 func SetStartPosition(index: int) -> void:
@@ -127,6 +129,10 @@ func CanMoveWithDice(dice_value: int, path_count: int) -> bool:
 	return target_position < path_count
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Let board clicks reach Dice while a human player is waiting to roll.
+	var input_board: BoardManager = get_tree().get_first_node_in_group("BoardManager")
+	if input_board != null and input_board.IsHumanTurn() and GameManager.GameCurrentState == GameManager.GameStateEnum.PlayerCanRollDice:
+		return
 	if not event.is_action_pressed("PlayerClick"):
 		return
 

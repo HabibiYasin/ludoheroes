@@ -1,89 +1,48 @@
 class_name WayPointsManager
-
 extends Node2D
 
-@export var main_path:Node2D
+@export var main_path: Node2D
 @export var green_path: Array[WayPoint]
 @export var yellow_path: Array[WayPoint]
 @export var blue_path: Array[WayPoint]
 @export var red_path: Array[WayPoint]
 
-func GetPositionOfThisPoint(index: int,playerColor:GameManager.PlayerColor)->Vector2:
-	var positionLocal:Vector2 = Vector2.ZERO
-	match playerColor:
+func GetPath(player_color: GameManager.PlayerColor) -> Array[WayPoint]:
+	match player_color:
 		GameManager.PlayerColor.Green:
-			positionLocal = green_path[index].position
-			pass
+			return green_path
 		GameManager.PlayerColor.Yellow:
-			positionLocal = yellow_path[index].position
-			pass
+			return yellow_path
 		GameManager.PlayerColor.Blue:
-			positionLocal = blue_path[index].position
-			pass
+			return blue_path
 		GameManager.PlayerColor.Red:
-			positionLocal = red_path[index].position
-			pass
-		pass
-	return positionLocal
-	
-func GetCount(playerColor:GameManager.PlayerColor) -> int:
-	match playerColor:
-		GameManager.PlayerColor.Green:
-			return green_path.size()
-		GameManager.PlayerColor.Yellow:
-			return yellow_path.size()
-		GameManager.PlayerColor.Blue:
-			return blue_path.size()
-		GameManager.PlayerColor.Red:
-			return red_path.size()
-	return -1
+			return red_path
+	return []
 
-func SetPieceToThisWayPoint(index:int, piece:Piece)->void:
-	var wayPoint:WayPoint = null
-	
-	match piece.CurrentPlayerColor:
-		GameManager.PlayerColor.Green:
-			for item:WayPoint in main_path.get_children():
-				if(item == green_path[index]): 
-					wayPoint = item;
-					pass
-				pass
-			if index >=52:
-				wayPoint = green_path[index]
-				pass
-		GameManager.PlayerColor.Yellow:
-			for item:WayPoint in main_path.get_children():
-				if(item == yellow_path[index]): 
-					wayPoint = item;
-					pass
-				pass
-			if index >=52:
-				wayPoint = yellow_path[index]
-				pass
-		GameManager.PlayerColor.Blue:
-			for item:WayPoint in main_path.get_children():
-				if(item == blue_path[index]): 
-					wayPoint = item;
-					pass
-				pass
-			if index >=52:
-				wayPoint = blue_path[index]
-				pass
-		GameManager.PlayerColor.Red:
-			for item:WayPoint in main_path.get_children():
-				if(item == red_path[index]): 
-					wayPoint = item;
-					pass
-				pass
-			if index >=52:
-				wayPoint = red_path[index]
-				pass
-		pass
-		
-	if wayPoint == null:
-		push_error("waypoint should not be null!!!")
-		pass
-	print("set piece :",index," player :",piece.CurrentPlayerColor," Waypoint : ",wayPoint.name)
-	piece.CurrentWayPoint = wayPoint
-	wayPoint.SetPiece(piece)
-	pass
+func GetWayPoint(index: int, player_color: GameManager.PlayerColor) -> WayPoint:
+	var path := GetPath(player_color)
+	if index < 0 or index >= path.size():
+		return null
+	return path[index]
+
+func GetPositionOfThisPoint(index: int, playerColor: GameManager.PlayerColor) -> Vector2:
+	var waypoint := GetWayPoint(index, playerColor)
+	if waypoint == null:
+		push_error("Invalid waypoint: color %d, index %d" % [playerColor, index])
+		return Vector2.ZERO
+	return waypoint.position
+
+func GetCount(playerColor: GameManager.PlayerColor) -> int:
+	return GetPath(playerColor).size()
+
+func SetPieceToThisWayPoint(index: int, piece: Piece) -> void:
+	if piece == null:
+		return
+	# The configured path includes both shared cells and the faction's home lane.
+	# Resolve from that path, without assuming a fixed index for the home lane.
+	var waypoint := GetWayPoint(index, piece.CurrentPlayerColor)
+	if waypoint == null:
+		push_error("Invalid waypoint: color %d, index %d" % [piece.CurrentPlayerColor, index])
+		return
+	piece.CurrentWayPoint = waypoint
+	waypoint.SetPiece(piece)

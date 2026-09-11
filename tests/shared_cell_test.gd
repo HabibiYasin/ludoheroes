@@ -21,11 +21,11 @@ func _ready() -> void:
 			var size := piece.PieceSprite.texture.get_size() * piece.scale
 			var center := piece.PieceSprite.position * piece.scale
 			var rect := Rect2(center - size * 0.5, size)
-			assert(Rect2(-56, -56, 112, 112).encloses(rect))
+			assert(Rect2(-112, -112, 224, 224).encloses(rect))
 			for other in rectangles:
 				assert(not rect.intersects(other))
 			rectangles.append(rect)
-		print("PASS: ", count, " heroes fit without overlap")
+		print("PASS: ", count, " heroes use enlarged shared layout without overlap")
 	for i in range(1, pieces.size()):
 		cell.RemoveMyRef(pieces[i])
 	assert(pieces[0].scale.is_equal_approx(normal_scale))

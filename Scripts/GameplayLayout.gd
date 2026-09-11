@@ -43,10 +43,14 @@ func _update_layout() -> void:
 	dice.global_position = origin + Vector2(230, 872) * fit
 	dice.global_scale = Vector2.ONE * 0.72 * fit
 	var status: Label = dice.get_node("StatusLabel")
-	status.add_theme_font_size_override("font_size", 38)
-	status.position = Vector2(-260, 125)
-	status.size = Vector2(520, 150)
+	status.add_theme_font_size_override("font_size", 30)
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.clip_text = true
+	status.max_lines_visible = 2
+	status.custom_minimum_size = Vector2.ZERO
+	status.position = Vector2(-260, 125)
+	status.size = Vector2(520, 100)
 	var background: Sprite2D = $BackGround2DSprite
 	var texture_size := background.texture.get_size()
 	background.position = viewport_size * 0.5

@@ -67,12 +67,29 @@ func RollDice() -> void:
 	_is_rolling = false
 	OnDiceRolled.emit(values)
 
+func TryRollFromBoard(world_position: Vector2) -> bool:
+	if get_tree().paused or _is_rolling or _board == null or not _board.IsHumanTurn():
+		return false
+	if GameManager.GameCurrentState != GameManager.GameStateEnum.PlayerCanRollDice:
+		return false
+	var artwork: Sprite2D = _board.get_node("Sprite2D_Board/Artwork")
+	if not artwork.get_rect().has_point(artwork.to_local(world_position)):
+		return false
+	_board.ManualAction.emit()
+	RollDice()
+	return true
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _board != null and not _board.IsHumanTurn():
 		return
 	if not event.is_action_pressed("DiceClick"):
 		return
 
+	if event is InputEventMouseButton:
+		var world_position: Vector2 = get_viewport().get_canvas_transform().affine_inverse() * event.position
+		if TryRollFromBoard(world_position):
+			get_viewport().set_input_as_handled()
+			return
 	var sprites: Array[Sprite2D] = [Maindice, SecondDice]
 	for index in range(sprites.size()):
 		var sprite := sprites[index]
@@ -102,17 +119,17 @@ func _update_status(state: GameManager.GameStateEnum) -> void:
 		return
 	if _board != null and not _board.IsHumanTurn() and state != GameManager.GameStateEnum.GameOver:
 		var color_name: String = ["Hijau", "Kuning", "Biru", "Merah"][_board.currentPlayerColor]
-		StatusLabel.text = "Bot %s sedang bermain..." % color_name
+		StatusLabel.text = "Bot %s\nsedang bermain..." % color_name
 		return
 	match state:
 		GameManager.GameStateEnum.PlayerCanRollDice:
-			StatusLabel.text = "Ketuk dadu untuk mengocok keduanya"
+			StatusLabel.text = "Ketuk papan, base, atau dadu\nuntuk mengocok"
 			Maindice.modulate = Color.WHITE
 			SecondDice.modulate = Color.WHITE
 		GameManager.GameStateEnum.PlayerSelectPiece:
-			StatusLabel.text = "Pilih dadu, lalu pion (boleh pion yang sama)"
+			StatusLabel.text = "Pilih dadu, lalu hero\n(boleh hero yang sama)"
 			if _board != null and _board.CanSummonWithPair():
-				StatusLabel.text = "Total 6: summon di base (2 dadu), atau gerak biasa."
+				StatusLabel.text = "Total 6: summon di base\natau gerakkan hero"
 		GameManager.GameStateEnum.GameOver:
 			StatusLabel.text = "Permainan selesai"
 		_:

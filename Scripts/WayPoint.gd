@@ -43,8 +43,8 @@ func _update_shared_layout() -> void:
 		return
 	if count == 0:
 		return
-	# Board squares are about 120 world units wide. Leave an outer margin
-	# and a small gap between heroes, including mixed teams on safe squares.
+	# Keep enlarged heroes closer together while retaining a small gap.
+	# Artwork may extend beyond the cell; logical positions stay at its center.
 	var columns := ceili(sqrt(float(count)))
 	var rows := ceili(float(count) / columns)
 	var slot := Vector2(112.0 / columns, 112.0 / rows)
@@ -53,7 +53,7 @@ func _update_shared_layout() -> void:
 		var column := index % columns
 		var row_count := mini(columns, count - row * columns)
 		var offset := Vector2((column - (row_count - 1) * 0.5) * slot.x, (row - (rows - 1) * 0.5) * slot.y)
-		myHoldings[index].SetSharedCellLayout(offset, slot - Vector2(4, 4))
+		myHoldings[index].SetSharedCellLayout(offset * 1.5, slot - Vector2(4, 4))
 
 func _find_capturable_opponent(incoming_piece: Piece) -> Piece:
 	if isThisSafePlace:
