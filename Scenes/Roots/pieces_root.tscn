@@ -37,18 +37,22 @@ Pieces = [NodePath("Piece_green"), NodePath("Piece_green2"), NodePath("Piece_gre
 [node name="Piece_green" parent="Green" instance=ExtResource("3_0y0fd")]
 position = Vector2(-661, 413)
 PieceTexture = ExtResource("5_silvy")
+HeroId = "Silvy"
 
 [node name="Piece_green2" parent="Green" instance=ExtResource("3_0y0fd")]
 position = Vector2(-434, 413)
 PieceTexture = ExtResource("6_garruk")
+HeroId = "Garruk"
 
 [node name="Piece_green3" parent="Green" instance=ExtResource("3_0y0fd")]
 position = Vector2(-434, 635)
 PieceTexture = ExtResource("7_pirunrun")
+HeroId = "Pirunrun"
 
 [node name="Piece_green4" parent="Green" instance=ExtResource("3_0y0fd")]
 position = Vector2(-658, 635)
 PieceTexture = ExtResource("8_mycellia")
+HeroId = "Mycellia"
 
 [node name="Yellow" type="Node2D" parent="." node_paths=PackedStringArray("Pieces")]
 script = ExtResource("2_4gfit")
@@ -59,21 +63,25 @@ CurrentPlayerColor = 1
 position = Vector2(-658, -440)
 CurrentPlayerColor = 1
 PieceTexture = ExtResource("9_kaelgrave")
+HeroId = "Kaelgrave"
 
 [node name="Piece_yellow2" parent="Yellow" instance=ExtResource("2_qbqiu")]
 position = Vector2(-434, -440)
 CurrentPlayerColor = 1
 PieceTexture = ExtResource("10_nyssara")
+HeroId = "Nyssara"
 
 [node name="Piece_yellow3" parent="Yellow" instance=ExtResource("2_qbqiu")]
 position = Vector2(-434, -664)
 CurrentPlayerColor = 1
 PieceTexture = ExtResource("11_vilmira")
+HeroId = "Vilmira"
 
 [node name="Piece_yellow4" parent="Yellow" instance=ExtResource("2_qbqiu")]
 position = Vector2(-661, -664)
 CurrentPlayerColor = 1
 PieceTexture = ExtResource("12_zyrella")
+HeroId = "Zyrella"
 
 [node name="Blue" type="Node2D" parent="." node_paths=PackedStringArray("Pieces")]
 script = ExtResource("2_4gfit")
@@ -84,21 +92,25 @@ CurrentPlayerColor = 2
 position = Vector2(429, -660)
 CurrentPlayerColor = 2
 PieceTexture = ExtResource("13_skalfin")
+HeroId = "Skalfin"
 
 [node name="Piece_blue2" parent="Blue" instance=ExtResource("1_cvck3")]
 position = Vector2(653, -660)
 CurrentPlayerColor = 2
 PieceTexture = ExtResource("14_octavus")
+HeroId = "Octavus"
 
 [node name="Piece_blue3" parent="Blue" instance=ExtResource("1_cvck3")]
 position = Vector2(653, -436)
 CurrentPlayerColor = 2
 PieceTexture = ExtResource("15_velissa")
+HeroId = "Velissa"
 
 [node name="Piece_blue4" parent="Blue" instance=ExtResource("1_cvck3")]
 position = Vector2(431, -436)
 CurrentPlayerColor = 2
 PieceTexture = ExtResource("16_kragor")
+HeroId = "Kragor"
 
 [node name="Red" type="Node2D" parent="." node_paths=PackedStringArray("Pieces")]
 script = ExtResource("2_4gfit")
@@ -109,18 +121,22 @@ CurrentPlayerColor = 3
 position = Vector2(422, 428)
 CurrentPlayerColor = 3
 PieceTexture = ExtResource("17_brillia")
+HeroId = "Brilia"
 
 [node name="Piece_Red2" parent="Red" instance=ExtResource("4_d4x23")]
 position = Vector2(644, 428)
 CurrentPlayerColor = 3
 PieceTexture = ExtResource("18_suki")
+HeroId = "Suki"
 
 [node name="Piece_Red3" parent="Red" instance=ExtResource("4_d4x23")]
 position = Vector2(644, 644)
 CurrentPlayerColor = 3
 PieceTexture = ExtResource("19_mordian")
+HeroId = "Mordian"
 
 [node name="Piece_Red4" parent="Red" instance=ExtResource("4_d4x23")]
 position = Vector2(422, 644)
 CurrentPlayerColor = 3
 PieceTexture = ExtResource("20_anata")
+HeroId = "Anata"

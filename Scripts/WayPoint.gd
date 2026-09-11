@@ -14,6 +14,8 @@ func SetPiece(piece: Piece) -> void:
 	if piece == null:
 		return
 
+	if myHoldings.has(piece):
+		return
 	# Defensive cleanup: the same piece must never exist twice in this waypoint.
 	myHoldings.erase(piece)
 	myHoldings.append(piece)
@@ -22,11 +24,13 @@ func SetPiece(piece: Piece) -> void:
 		boardManager.DetectKill(null)
 
 	var captured_piece := _find_capturable_opponent(piece)
-	if captured_piece != null:
+	if captured_piece != null and captured_piece.TakeDamage(piece.Attack):
 		myHoldings.erase(captured_piece)
 		captured_piece.SetSharedCellLayout(Vector2.ZERO)
 		if boardManager != null:
 			boardManager.DetectKill(captured_piece)
+		else:
+			captured_piece.SendBackToLobby()
 
 	if IsThisHomePlace:
 		piece.IsInHome = true

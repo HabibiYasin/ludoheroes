@@ -1,6 +1,34 @@
 class_name Piece
 extends Node2D
 
+const HeroCatalog = preload("res://Scripts/HeroCatalog.gd")
+signal StatsChanged
+
+@export var HeroId: String = ""
+var HeroClass: String = "Unknown"
+var Faction: String = ""
+var MaxHealth: int = 1
+var Health: int = 1
+var Attack: int = 0
+
+func InitializeStats() -> void:
+	if not HeroCatalog.HEROES.has(HeroId):
+		return
+	var stats: Array = HeroCatalog.HEROES[HeroId]
+	HeroClass = stats[0]
+	Faction = stats[1]
+	Attack = stats[2]
+	MaxHealth = stats[3]
+	Health = MaxHealth
+	StatsChanged.emit()
+
+func TakeDamage(amount: int) -> bool:
+	if Health <= 0 or amount <= 0:
+		return false
+	Health = maxi(0, Health - amount)
+	StatsChanged.emit()
+	return Health == 0
+
 # -1 means the piece is still in the lobby/base.
 var CurrentPosition: int = -1
 var CurrentState: GameManager.PieceStateEnum = GameManager.PieceStateEnum.InLobby
@@ -18,6 +46,7 @@ var _normal_sprite_position := Vector2.ZERO
 @export var PieceTexture: Texture2D
 
 func _ready() -> void:
+	InitializeStats()
 	LobbyPosition = position
 	if PieceTexture != null and PieceSprite != null:
 		# Fit replacement artwork into the original piece's footprint.
@@ -57,6 +86,9 @@ func SetCurrentPositionAndCheckKill(index: int) -> void:
 	if IsInHome:
 		return
 
+	if IsInLobby() and Health == 0:
+		Health = MaxHealth
+		StatsChanged.emit()
 	CurrentPosition = index
 	CurrentState = GameManager.PieceStateEnum.InWayPoint
 

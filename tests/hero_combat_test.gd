@@ -1,0 +1,73 @@
+extends Node
+
+func _ready() -> void:
+	call_deferred("_run")
+
+func _run() -> void:
+	var game = load("res://Levels/Level_MainGamePlay.tscn").instantiate()
+	game.get_node("CoreGamplay/Board/board_GamePlay").BotsEnabled = false
+	add_child(game)
+	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
+	var catalog = preload("res://Scripts/HeroCatalog.gd")
+	var seen := {}
+	for group in [board.piecesManager.GreenPieces, board.piecesManager.YellowPieces, board.piecesManager.BluePieces, board.piecesManager.RedPieces]:
+		for hero: Piece in group.Pieces:
+			assert(catalog.HEROES.has(hero.HeroId))
+			assert(hero.Health == hero.MaxHealth and hero.Health > 0)
+			assert(hero.HeroClass == catalog.HEROES[hero.HeroId][0])
+			seen[hero.HeroId] = true
+	assert(seen.size() == 16)
+	var attacker: Piece = board.piecesManager.GreenPieces.Pieces[1] # Garruk: 1 ATK
+	var target: Piece = board.piecesManager.RedPieces.Pieces[2] # Mordian: 4 HP
+	var cell: WayPoint = board.way_points.green_path[1]
+	assert(not cell.isThisSafePlace)
+	target.CurrentWayPoint = cell
+	target.CurrentState = GameManager.PieceStateEnum.InWayPoint
+	target.CurrentPosition = 40
+	cell.SetPiece(target)
+	GameManager.HeroInspected.emit(target)
+	var hud = game.get_child(game.get_child_count() - 1)
+	assert(hud.hero_stats.text == "HP  4 / 4     ATK  1")
+	attacker.SetCurrentPositionAndCheckKill(0)
+	board._on_dice_root_on_dice_rolled([1, 2])
+	await board._on_player_select_piece(attacker)
+	assert(target.Health == 3 and not target.IsInLobby())
+	assert(cell.myHoldings.size() == 2 and not board.hasKill)
+	assert(board.remainingDice == [0, 2])
+	assert(hud.hero_stats.text == "HP  3 / 4     ATK  1")
+	cell.SetPiece(attacker) # Re-registering does not attack again.
+	assert(target.Health == 3)
+	# Lethal landing uses the real asynchronous death/turn pipeline.
+	target.TakeDamage(2)
+	cell.RemoveMyRef(attacker)
+	attacker.SetCurrentPositionAndCheckKill(0)
+	board._on_dice_root_on_dice_rolled([1, 2])
+	await board._on_player_select_piece(attacker)
+	assert(target.Health == 0 and target.IsInLobby())
+	assert(target.position == target.LobbyPosition and target.CurrentWayPoint == null)
+	assert(not cell.myHoldings.has(target) and board.remainingDice == [0, 2])
+	assert(hud.hero_stats.text == "HP  0 / 4     ATK  1")
+	target.SetCurrentPositionAndCheckKill(0)
+	assert(target.Health == 4 and not target.IsInLobby())
+	assert(hud.hero_stats.text == "HP  4 / 4     ATK  1")
+	# Isolated safe cell, friendly landing, and zero attack all preserve HP.
+	var safe := WayPoint.new()
+	safe.isThisSafePlace = true
+	add_child(safe)
+	safe.SetPiece(target)
+	safe.SetPiece(attacker)
+	assert(target.Health == 4)
+	safe.ClearMe()
+	safe.isThisSafePlace = false
+	safe.SetPiece(target)
+	var support: Piece = board.piecesManager.RedPieces.Pieces[3]
+	safe.SetPiece(support) # Same faction.
+	assert(target.Health == 4)
+	safe.RemoveMyRef(support)
+	support.CurrentPlayerColor = GameManager.PlayerColor.Blue
+	safe.SetPiece(support) # Anata has zero attack.
+	assert(target.Health == 4 and safe.myHoldings.size() == 2)
+	assert(not target.TakeDamage(-2) and target.Health == 4)
+	assert(target.TakeDamage(99) and target.Health == 0)
+	print("PASS: 16 hero classes/stats, damage, surviving shared cell, lethal landing, dice continuation, base return, respawn, live HUD, safe/friendly cells, zero attack and HP clamp")
+	get_tree().quit()
