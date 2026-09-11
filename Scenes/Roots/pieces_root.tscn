@@ -1,0 +1,126 @@
+[gd_scene load_steps=23 format=3 uid="uid://bm2imeeg020if"]
+
+[ext_resource type="PackedScene" uid="uid://b27l66dih2e4k" path="res://Scenes/piece_blue.tscn" id="1_cvck3"]
+[ext_resource type="Script" path="res://Scripts/PiecesManager.gd" id="1_xrjd1"]
+[ext_resource type="Script" path="res://Scripts/PlayerPieceGroup.gd" id="2_4gfit"]
+[ext_resource type="PackedScene" uid="uid://m30ihwooxrng" path="res://Scenes/piece_yellow.tscn" id="2_qbqiu"]
+[ext_resource type="PackedScene" uid="uid://phtxcdgc4f8c" path="res://Scenes/piece_green.tscn" id="3_0y0fd"]
+[ext_resource type="PackedScene" uid="uid://bgtr34560sceb" path="res://Scenes/piece_red.tscn" id="4_d4x23"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Silvy.png" id="5_silvy"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Garruk.png" id="6_garruk"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Pirunrun.png" id="7_pirunrun"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Mycellia.png" id="8_mycellia"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Kaelgrave.png" id="9_kaelgrave"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Nyssara.png" id="10_nyssara"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Vilmira.png" id="11_vilmira"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Zyrella.png" id="12_zyrella"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Skalfin.png" id="13_skalfin"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Octavus.png" id="14_octavus"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Velissa.png" id="15_velissa"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Kragor.png" id="16_kragor"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Brillia.png" id="17_brillia"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Suki.png" id="18_suki"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Mordian.png" id="19_mordian"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Pieces/Anata.png" id="20_anata"]
+
+[node name="Pieces" type="Node2D" node_paths=PackedStringArray("BluePieces", "YellowPieces", "GreenPieces", "RedPieces")]
+script = ExtResource("1_xrjd1")
+BluePieces = NodePath("Blue")
+YellowPieces = NodePath("Yellow")
+GreenPieces = NodePath("Green")
+RedPieces = NodePath("Red")
+
+[node name="Green" type="Node2D" parent="." node_paths=PackedStringArray("Pieces")]
+script = ExtResource("2_4gfit")
+Pieces = [NodePath("Piece_green"), NodePath("Piece_green2"), NodePath("Piece_green3"), NodePath("Piece_green4")]
+
+[node name="Piece_green" parent="Green" instance=ExtResource("3_0y0fd")]
+position = Vector2(-661, 413)
+PieceTexture = ExtResource("5_silvy")
+
+[node name="Piece_green2" parent="Green" instance=ExtResource("3_0y0fd")]
+position = Vector2(-434, 413)
+PieceTexture = ExtResource("6_garruk")
+
+[node name="Piece_green3" parent="Green" instance=ExtResource("3_0y0fd")]
+position = Vector2(-434, 635)
+PieceTexture = ExtResource("7_pirunrun")
+
+[node name="Piece_green4" parent="Green" instance=ExtResource("3_0y0fd")]
+position = Vector2(-658, 635)
+PieceTexture = ExtResource("8_mycellia")
+
+[node name="Yellow" type="Node2D" parent="." node_paths=PackedStringArray("Pieces")]
+script = ExtResource("2_4gfit")
+Pieces = [NodePath("Piece_yellow"), NodePath("Piece_yellow2"), NodePath("Piece_yellow3"), NodePath("Piece_yellow4")]
+CurrentPlayerColor = 1
+
+[node name="Piece_yellow" parent="Yellow" instance=ExtResource("2_qbqiu")]
+position = Vector2(-658, -440)
+CurrentPlayerColor = 1
+PieceTexture = ExtResource("9_kaelgrave")
+
+[node name="Piece_yellow2" parent="Yellow" instance=ExtResource("2_qbqiu")]
+position = Vector2(-434, -440)
+CurrentPlayerColor = 1
+PieceTexture = ExtResource("10_nyssara")
+
+[node name="Piece_yellow3" parent="Yellow" instance=ExtResource("2_qbqiu")]
+position = Vector2(-434, -664)
+CurrentPlayerColor = 1
+PieceTexture = ExtResource("11_vilmira")
+
+[node name="Piece_yellow4" parent="Yellow" instance=ExtResource("2_qbqiu")]
+position = Vector2(-661, -664)
+CurrentPlayerColor = 1
+PieceTexture = ExtResource("12_zyrella")
+
+[node name="Blue" type="Node2D" parent="." node_paths=PackedStringArray("Pieces")]
+script = ExtResource("2_4gfit")
+Pieces = [NodePath("Piece_blue"), NodePath("Piece_blue2"), NodePath("Piece_blue3"), NodePath("Piece_blue4")]
+CurrentPlayerColor = 2
+
+[node name="Piece_blue" parent="Blue" instance=ExtResource("1_cvck3")]
+position = Vector2(429, -660)
+CurrentPlayerColor = 2
+PieceTexture = ExtResource("13_skalfin")
+
+[node name="Piece_blue2" parent="Blue" instance=ExtResource("1_cvck3")]
+position = Vector2(653, -660)
+CurrentPlayerColor = 2
+PieceTexture = ExtResource("14_octavus")
+
+[node name="Piece_blue3" parent="Blue" instance=ExtResource("1_cvck3")]
+position = Vector2(653, -436)
+CurrentPlayerColor = 2
+PieceTexture = ExtResource("15_velissa")
+
+[node name="Piece_blue4" parent="Blue" instance=ExtResource("1_cvck3")]
+position = Vector2(431, -436)
+CurrentPlayerColor = 2
+PieceTexture = ExtResource("16_kragor")
+
+[node name="Red" type="Node2D" parent="." node_paths=PackedStringArray("Pieces")]
+script = ExtResource("2_4gfit")
+Pieces = [NodePath("Piece_Red"), NodePath("Piece_Red2"), NodePath("Piece_Red3"), NodePath("Piece_Red4")]
+CurrentPlayerColor = 3
+
+[node name="Piece_Red" parent="Red" instance=ExtResource("4_d4x23")]
+position = Vector2(422, 428)
+CurrentPlayerColor = 3
+PieceTexture = ExtResource("17_brillia")
+
+[node name="Piece_Red2" parent="Red" instance=ExtResource("4_d4x23")]
+position = Vector2(644, 428)
+CurrentPlayerColor = 3
+PieceTexture = ExtResource("18_suki")
+
+[node name="Piece_Red3" parent="Red" instance=ExtResource("4_d4x23")]
+position = Vector2(644, 644)
+CurrentPlayerColor = 3
+PieceTexture = ExtResource("19_mordian")
+
+[node name="Piece_Red4" parent="Red" instance=ExtResource("4_d4x23")]
+position = Vector2(422, 644)
+CurrentPlayerColor = 3
+PieceTexture = ExtResource("20_anata")
