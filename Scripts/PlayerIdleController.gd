@@ -2,6 +2,8 @@ extends Node
 
 @export var Enabled := true
 @export var IdleSeconds := 10.0
+@export var AutoActionDelay := 0.65
+var AutoPlaying := false
 var ConsecutiveIdleTurns := 0
 var SecondsRemaining := 10.0
 var WaitingForPlayer := false
@@ -18,6 +20,7 @@ func _ready() -> void:
 	_bot = get_parent().get_node("BotController")
 	_board.ManualAction.connect(_manual_action)
 	_board.TurnFinished.connect(_turn_finished)
+	GameManager.HeroInspected.connect(func(_piece: Piece): _manual_action())
 
 func _process(delta: float) -> void:
 	var state := GameManager.GameCurrentState
@@ -28,7 +31,9 @@ func _process(delta: float) -> void:
 	if WaitingForPlayer:
 		_elapsed += delta
 	SecondsRemaining = maxf(0.0, IdleSeconds - _elapsed)
-	if WaitingForPlayer and _elapsed >= IdleSeconds:
+	var action_delay := AutoActionDelay if AutoPlaying else IdleSeconds
+	if WaitingForPlayer and _elapsed >= action_delay:
+		AutoPlaying = true
 		_elapsed = 0.0
 		_used_auto = true
 		if state == GameManager.GameStateEnum.PlayerCanRollDice:
@@ -37,8 +42,7 @@ func _process(delta: float) -> void:
 			_bot._play_move()
 
 func _manual_action() -> void:
-	if _board.currentPlayerColor != _board.HumanPlayerColor:
-		return
+	AutoPlaying = false
 	_elapsed = 0.0
 	SecondsRemaining = IdleSeconds
 	_used_auto = false

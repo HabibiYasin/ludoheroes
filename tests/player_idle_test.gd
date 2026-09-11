@@ -10,6 +10,7 @@ func _ready() -> void:
 	var idle = game.get_node("CoreGamplay/PlayerIdleController")
 	assert(idle.IdleSeconds == 10.0)
 	idle.IdleSeconds = 0.05
+	idle.AutoActionDelay = 0.02
 	dice.IsTestRun = true
 	get_tree().paused = true
 	await get_tree().create_timer(0.15).timeout
@@ -18,6 +19,9 @@ func _ready() -> void:
 	while board.IsHumanTurn():
 		await get_tree().process_frame
 	assert(idle.ConsecutiveIdleTurns == 1)
+	assert(idle.AutoPlaying)
+	# Subsequent turns must not wait for the idle timeout again.
+	idle.IdleSeconds = 100.0
 	assert(board.piecesManager.GreenPieces.HasUnlockedAnyPiece())
 	assert(idle.WarningText().is_empty())
 	# Two automated dice moves counted once; bot turns cannot count as idle.
@@ -39,6 +43,7 @@ func _ready() -> void:
 		board.UpdatePlayerTurn()
 	board.ManualAction.emit()
 	assert(idle.ConsecutiveIdleTurns == 0 and idle.WarningText().is_empty())
+	assert(not idle.AutoPlaying)
 	assert(is_equal_approx(idle.SecondsRemaining, idle.IdleSeconds))
 	# Manual input cancels an almost-expired auto action.
 	idle._elapsed = idle.IdleSeconds * 0.9
@@ -46,6 +51,11 @@ func _ready() -> void:
 	idle._process(idle.IdleSeconds * 0.5)
 	assert(not dice._is_rolling and not idle._used_auto)
 	assert(idle.SecondsRemaining > 0.0)
+	# Inspecting any hero also stops auto-play, even during a bot turn.
+	idle.AutoPlaying = true
+	board.UpdatePlayerTurn()
+	GameManager.HeroInspected.emit(board.piecesManager.GreenPieces.Pieces[0])
+	assert(not idle.AutoPlaying)
 	idle.Enabled = false
 	await get_tree().create_timer(0.15).timeout
 	assert(not idle.WaitingForPlayer)

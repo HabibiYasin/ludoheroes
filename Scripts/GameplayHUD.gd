@@ -82,8 +82,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if idle_controller == null:
 		return
-	idle_countdown.visible = idle_controller.WaitingForPlayer
-	idle_countdown.text = "Aksi otomatis dalam %d detik" % ceili(idle_controller.SecondsRemaining)
+	idle_countdown.visible = idle_controller.WaitingForPlayer or idle_controller.AutoPlaying
+	idle_countdown.text = "Auto-play aktif - ketuk hero untuk stop" if idle_controller.AutoPlaying else "Aksi otomatis dalam %d detik" % ceili(idle_controller.SecondsRemaining)
 	idle_warning.text = idle_controller.WarningText()
 	idle_warning.visible = not idle_warning.text.is_empty()
 
