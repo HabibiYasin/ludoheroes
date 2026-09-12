@@ -17,6 +17,7 @@ var remainingDice: Array[int] = []
 var selectedDiceIndex: int = -1
 var attack_presentation: CanvasLayer
 var item_choice: CanvasLayer
+var move_preview: Node2D
 signal ItemHeroInspected(hero: Piece)
 var currentRound: int = 1
 var _round_finished_players: Array[int] = []
@@ -37,6 +38,8 @@ func _ready() -> void:
 	currentPlayerTurnIndex = int(HumanPlayerColor) - 1
 	GameManager.OnPlayerSelectPiece.connect(_on_player_select_piece)
 	UpdatePlayerTurn()
+	move_preview = preload("res://Scripts/MovePreview.gd").new()
+	add_child(move_preview)
 
 func GetPathCount(player_color: GameManager.PlayerColor) -> int:
 	if way_points == null:

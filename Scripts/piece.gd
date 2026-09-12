@@ -136,6 +136,9 @@ func _ready() -> void:
 
 # Offset only the artwork: logical movement stays at the waypoint center.
 # Root scaling remains independent of the sprite's selection animation.
+func GetBoardDisplayScale() -> Vector2:
+	return _normal_scale * HERO_DISPLAY_SCALE
+
 func SetSharedCellLayout(offset: Vector2, slot_size: Vector2 = Vector2.ZERO) -> void:
 	if PieceSprite == null or PieceSprite.texture == null:
 		return
