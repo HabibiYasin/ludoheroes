@@ -7,11 +7,35 @@ func _ready() -> void:
 	add_child(game)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
 	var dice: Dice = game.get_node("CoreGamplay/Dice/DiceRoot")
+	dice.IsTestRun = true
 	var idle = game.get_node("CoreGamplay/PlayerIdleController")
+	assert(idle.AutoRollDelay == 2.0)
+	# Simulate the next human turn: no roll before two seconds, manual takeover wins.
+	idle.set_process(false)
+	idle.AutoPlaying = true
+	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.PlayerCanRollDice)
+	idle._process(1.0)
+	assert(not dice._is_rolling and is_equal_approx(idle.SecondsRemaining, 1.0))
+	idle._process(0.9)
+	assert(not dice._is_rolling)
+	board.ManualAction.emit()
+	idle._process(0.2)
+	assert(not dice._is_rolling and not idle.AutoPlaying)
+	idle.AutoPlaying = true
+	idle._elapsed = 0.0
+	idle._process(1.9)
+	assert(not dice._is_rolling)
+	idle._process(0.1)
+	assert(dice._is_rolling)
+	await dice.OnDiceRolled
+	board.remainingDice.clear()
+	board.ManualAction.emit()
+	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.PlayerCanRollDice)
+	idle._last_state = -1
+	idle.set_process(true)
 	assert(idle.IdleSeconds == 10.0)
 	idle.IdleSeconds = 0.05
 	idle.AutoActionDelay = 0.02
-	dice.IsTestRun = true
 	get_tree().paused = true
 	await get_tree().create_timer(0.15).timeout
 	assert(not dice._is_rolling and idle.ConsecutiveIdleTurns == 0)

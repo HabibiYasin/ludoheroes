@@ -19,13 +19,19 @@ var settings_dirty := false
 var idle_controller: Node
 var idle_countdown: Label
 var idle_warning: Label
+var round_label: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	root = Control.new()
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	_button(root, "MENU", Rect2(40, 40, 220, 78), _open_menu)
+	_button(root, "MENU", Rect2(40, 40, 180, 78), _open_menu)
+	var round_panel := _panel(root, Rect2(240, 40, 180, 78), GOLD)
+	round_label = _label(round_panel, "", Rect2(0, 0, 180, 78), 26, INK)
+	var board: BoardManager = get_parent().get_node("CoreGamplay/Board/board_GamePlay")
+	board.RoundChanged.connect(_refresh_round)
+	_refresh_round(board.currentRound)
 	var hero := _panel(root, Rect2(40, 170, 380, 580))
 	_label(hero, "HERO DIPILIH", Rect2(20, 16, 340, 34), 24, GOLD)
 	hero_icon = _picture(hero, Rect2(65, 55, 250, 245), null)
@@ -82,6 +88,9 @@ func _ready() -> void:
 	GameManager.HeroInspected.connect(_inspect_hero)
 	get_viewport().size_changed.connect(_resize)
 	_resize()
+
+func _refresh_round(value: int) -> void:
+	round_label.text = "RONDE %d" % value
 
 func _process(_delta: float) -> void:
 	if idle_controller == null:

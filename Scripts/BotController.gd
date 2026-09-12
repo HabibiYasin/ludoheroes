@@ -54,12 +54,12 @@ func ChooseMove() -> Dictionary:
 			continue
 		for piece in group.GetMovablePieces(value, path_count):
 			var score := _rng.randf()
-			if not piece.IsInLobby() and piece.CurrentPosition + value == path_count - 1:
+			if not piece.IsInLobby() and piece.CurrentPosition + piece.GetMoveDistance(value) == path_count - 1:
 				score += 100.0
 			elif piece.IsInLobby():
 				score += 10.0
 			else:
-				score += float(piece.CurrentPosition + value) / float(path_count)
+				score += float(piece.CurrentPosition + piece.GetMoveDistance(value)) / float(path_count)
 			if score > best_score:
 				best_score = score
 				best = {"die_index": index, "piece": piece}

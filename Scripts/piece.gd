@@ -26,7 +26,33 @@ func InitializeStats() -> void:
 	Health = MaxHealth
 	StatsChanged.emit()
 
-func TakeDamage(amount: int) -> bool:
+func HasClass(class_value: String) -> bool:
+	for value in HeroClass.to_lower().split("-"):
+		if value.strip_edges() == class_value.to_lower():
+			return true
+	return false
+
+func GetIncomingDamage(amount: int, direct: bool = true) -> int:
+	return maxi(0, amount - (1 if HasClass("Tank") and not direct else 0))
+
+func Heal(amount: int) -> void:
+	if Health <= 0 or amount <= 0 or Health >= MaxHealth:
+		return
+	Health = mini(MaxHealth, Health + amount)
+	StatsChanged.emit()
+
+func GetMoveDistance(dice_value: int) -> int:
+	if not HasClass("Runner") or IsInLobby() or IsInHome or dice_value not in [1, 2, 3] or wayPointManager == null:
+		return dice_value
+	# The entire boosted move must stay on the shared track.
+	for index in range(CurrentPosition, CurrentPosition + dice_value + 2):
+		var cell := wayPointManager.GetWayPoint(index, CurrentPlayerColor)
+		if cell == null or cell.get_parent() != wayPointManager.main_path:
+			return dice_value
+	return dice_value + 1
+
+func TakeDamage(amount: int, direct: bool = true) -> bool:
+	amount = GetIncomingDamage(amount, direct)
 	if Health <= 0 or amount <= 0:
 		return false
 	Health = maxi(0, Health - amount)
@@ -130,7 +156,7 @@ func CanMoveWithDice(dice_value: int, path_count: int) -> bool:
 	if IsInLobby():
 		return dice_value == 6
 
-	var target_position := CurrentPosition + dice_value
+	var target_position := CurrentPosition + GetMoveDistance(dice_value)
 	return target_position < path_count
 
 func _unhandled_input(event: InputEvent) -> void:

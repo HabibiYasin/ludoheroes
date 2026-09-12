@@ -16,6 +16,10 @@ var currentPlayerColor: GameManager.PlayerColor
 var remainingDice: Array[int] = []
 var selectedDiceIndex: int = -1
 var attack_presentation: CanvasLayer
+var currentRound: int = 1
+var _round_finished_players: Array[int] = []
+
+signal RoundChanged(value: int)
 
 signal DiceSelectionChanged(values: Array[int], selected_index: int)
 signal OnHasKill
@@ -122,7 +126,7 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 		_complete_die()
 		return
 
-	var target_position := moveThisPiece.CurrentPosition + dice_value
+	var target_position := moveThisPiece.CurrentPosition + moveThisPiece.GetMoveDistance(dice_value)
 
 	# Exact roll is required to reach the last/home waypoint.
 	if target_position >= path_count:
@@ -139,6 +143,9 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 			step,
 			moveThisPiece.CurrentPlayerColor
 		)
+		# The destination heals through SetPiece; intermediate tiles heal here.
+		if step < target_position:
+			way_points.GetWayPoint(step, moveThisPiece.CurrentPlayerColor).HealFriends(moveThisPiece)
 		await get_tree().create_timer(0.12, false).timeout
 
 	moveThisPiece.SetCurrentPositionAndCheckKill(target_position)
@@ -171,6 +178,7 @@ func _wait_for_kill_if_needed() -> void:
 
 func FinishTurn() -> void:
 	TurnFinished.emit(currentPlayerColor)
+	_record_round_turn()
 	remainingDice.clear()
 	selectedDiceIndex = -1
 	DiceSelectionChanged.emit(remainingDice, selectedDiceIndex)
@@ -180,6 +188,18 @@ func FinishTurn() -> void:
 	UpdatePlayerTurn()
 
 	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.PlayerCanRollDice)
+
+func _record_round_turn() -> void:
+	if not _round_finished_players.has(int(currentPlayerColor)):
+		_round_finished_players.append(int(currentPlayerColor))
+	for index in range(4):
+		var color := _color_from_turn_index(index)
+		var group := piecesManager.GetPieceGroupBasedOnType(color)
+		if group != null and not group.HasThisPlayerCompleted() and not _round_finished_players.has(int(color)):
+			return
+	_round_finished_players.clear()
+	currentRound += 1
+	RoundChanged.emit(currentRound)
 
 func MovePiecesToHome(_value: int, moveThisPiece: Piece) -> void:
 	if moveThisPiece == null:

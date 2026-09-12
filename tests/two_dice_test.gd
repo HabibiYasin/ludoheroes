@@ -11,15 +11,32 @@ func _ready() -> void:
 	var second: Piece = group.Pieces[1]
 	var initial_player: int = board.currentPlayerTurnIndex
 
+	# A round starts with the selected player, even across the red/green boundary.
+	var hud = game.get_child(game.get_child_count() - 1)
+	for start_color in range(4):
+		board.currentPlayerTurnIndex = start_color - 1
+		board.UpdatePlayerTurn()
+		var initial_round := board.currentRound
+		for completed_turns in range(4):
+			assert(board.currentRound == initial_round)
+			board._on_dice_root_on_dice_rolled([2, 3])
+		assert(board.currentRound == initial_round + 1)
+		assert(hud.round_label.text == "RONDE %d" % board.currentRound)
+	board.currentPlayerTurnIndex = initial_player - 1
+	board.UpdatePlayerTurn()
+	var round_before_moves := board.currentRound
+
 	# The unplayable 3 must remain available after the 6 unlocks a piece.
 	board._on_dice_root_on_dice_rolled([3, 6])
 	assert(board.selectedDiceIndex == 1)
 	await board._on_player_select_piece(first)
 	assert(first.CurrentPosition == 0)
+	assert(board.currentRound == round_before_moves)
 	assert(board.currentDiceValue == 3)
 	assert(board.remainingDice == [3, 0])
 	await board._on_player_select_piece(first)
 	assert(first.CurrentPosition == 3)
+	assert(board.currentRound == round_before_moves)
 	assert(board.remainingDice.is_empty())
 	assert(board.currentPlayerTurnIndex == (initial_player + 1) % 4)
 	while board.currentPlayerTurnIndex != initial_player:

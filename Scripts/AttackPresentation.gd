@@ -4,12 +4,14 @@ const SLASHES = preload("res://Arts/Textures_Game/Effects/AttackSlashes.tres")
 var pending: Array[Dictionary] = []
 var stage: Control
 
-func queue_attack(attacker: Piece, defender: Piece) -> void:
+func queue_attack(attacker: Piece, defender: Piece, damage: int = -1) -> void:
+	if damage < 0:
+		damage = attacker.Attack
 	pending.append({
 		"attacker": attacker.PieceSprite.texture,
 		"defender": defender.PieceSprite.texture,
 		"faction": attacker.Faction,
-		"damage": mini(attacker.Attack, defender.Health),
+		"damage": mini(damage, defender.Health),
 	})
 
 func play_pending() -> void:

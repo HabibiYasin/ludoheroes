@@ -3,6 +3,7 @@ extends Node
 @export var Enabled := true
 @export var IdleSeconds := 10.0
 @export var AutoActionDelay := 0.65
+@export var AutoRollDelay := 2.0
 var AutoPlaying := false
 var ConsecutiveIdleTurns := 0
 var SecondsRemaining := 10.0
@@ -30,8 +31,10 @@ func _process(delta: float) -> void:
 	_last_state = state
 	if WaitingForPlayer:
 		_elapsed += delta
-	SecondsRemaining = maxf(0.0, IdleSeconds - _elapsed)
-	var action_delay := AutoActionDelay if AutoPlaying else IdleSeconds
+	var action_delay := IdleSeconds
+	if AutoPlaying:
+		action_delay = AutoRollDelay if state == GameManager.GameStateEnum.PlayerCanRollDice else AutoActionDelay
+	SecondsRemaining = maxf(0.0, action_delay - _elapsed)
 	if WaitingForPlayer and _elapsed >= action_delay:
 		AutoPlaying = true
 		_elapsed = 0.0
