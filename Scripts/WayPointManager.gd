@@ -32,6 +32,14 @@ func GetPositionOfThisPoint(index: int, playerColor: GameManager.PlayerColor) ->
 		return Vector2.ZERO
 	return waypoint.position
 
+func IsItemTile(cell: WayPoint) -> bool:
+	if cell == null or not cell.isThisSafePlace or cell.IsThisHomePlace or cell.get_parent() != main_path:
+		return false
+	for color in range(4):
+		if GetWayPoint(0, color) == cell:
+			return false
+	return true
+
 func GetCount(playerColor: GameManager.PlayerColor) -> int:
 	return GetPath(playerColor).size()
 

@@ -15,7 +15,7 @@ func _run() -> void:
 	for color in range(4):
 		var hero: Piece = board.piecesManager.GetPieceGroupBasedOnType(color).Pieces[0]
 		var path: Array[WayPoint] = paths.GetPath(color)
-		assert(path.size() == [63, 64, 63, 64][color])
+		assert(path.size() == [65, 64, 63, 64][color])
 		var home_count := 6 if color == GameManager.PlayerColor.Blue else 7
 		var last_shared := path.size() - home_count - 1
 		assert(path[last_shared].get_parent() == paths.main_path)

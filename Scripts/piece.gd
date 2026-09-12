@@ -14,6 +14,28 @@ var Faction: String = ""
 var MaxHealth: int = 1
 var Health: int = 1
 var Attack: int = 0
+var Items: Dictionary = {}
+var MoveBonus: int = 0
+var SkillDamage: int = 0
+
+func EquipItem(id: int) -> bool:
+	if id < 0 or id >= 6 or (Items.size() >= 2 and not Items.has(id)):
+		return false
+	Items[id] = int(Items.get(id, 0)) + 1
+	match id:
+		0: Attack += 1
+		1: MaxHealth += 1
+		2: MoveBonus += 1
+		3: SkillDamage += 1
+		4: PhysicalDefense += 1
+		5: MagicalDefense += 1
+	StatsChanged.emit()
+	return true
+
+func StackRandomItem() -> void:
+	if not Items.is_empty():
+		EquipItem(Items.keys().pick_random())
+
 enum DamageType { PHYSICAL, MAGICAL }
 var PhysicalDefense: int = 0:
 	set(value):
@@ -25,6 +47,9 @@ var MagicalDefense: int = 0:
 		StatsChanged.emit()
 
 func InitializeStats() -> void:
+	Items.clear()
+	MoveBonus = 0
+	SkillDamage = 0
 	if not HeroCatalog.HEROES.has(HeroId):
 		return
 	var stats: Array = HeroCatalog.HEROES[HeroId]
@@ -54,6 +79,9 @@ func Heal(amount: int) -> void:
 	StatsChanged.emit()
 
 func GetMoveDistance(dice_value: int) -> int:
+	return _class_move_distance(dice_value) + (MoveBonus if not IsInLobby() and not IsInHome else 0)
+
+func _class_move_distance(dice_value: int) -> int:
 	if not HasClass("Runner") or IsInLobby() or IsInHome or dice_value not in [1, 2, 3] or wayPointManager == null:
 		return dice_value
 	# The entire boosted move must stay on the shared track.

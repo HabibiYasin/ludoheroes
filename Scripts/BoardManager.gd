@@ -16,6 +16,8 @@ var currentPlayerColor: GameManager.PlayerColor
 var remainingDice: Array[int] = []
 var selectedDiceIndex: int = -1
 var attack_presentation: CanvasLayer
+var item_choice: CanvasLayer
+signal ItemHeroInspected(hero: Piece)
 var currentRound: int = 1
 var _round_finished_players: Array[int] = []
 
@@ -29,6 +31,8 @@ signal TurnFinished(color: GameManager.PlayerColor)
 func _ready() -> void:
 	attack_presentation = preload("res://Scripts/AttackPresentation.gd").new()
 	add_child(attack_presentation)
+	item_choice = preload("res://Scripts/ItemChoice.gd").new()
+	add_child(item_choice)
 	HumanPlayerColor = GameManager.LocalPlayerColor
 	currentPlayerTurnIndex = int(HumanPlayerColor) - 1
 	GameManager.OnPlayerSelectPiece.connect(_on_player_select_piece)
@@ -150,6 +154,7 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 
 	moveThisPiece.SetCurrentPositionAndCheckKill(target_position)
 	await _wait_for_kill_if_needed()
+	await AwardLandingItem(moveThisPiece)
 
 	# WayPoint marks IsInHome when the final/home waypoint is reached.
 	if moveThisPiece.IsInHome:
@@ -175,6 +180,20 @@ func _wait_for_kill_if_needed() -> void:
 	if hasKill:
 		await OnHasKill
 	await attack_presentation.play_pending()
+
+func AwardLandingItem(hero: Piece) -> void:
+	if hero.Health <= 0 or hero.IsInHome or not way_points.IsItemTile(hero.CurrentWayPoint):
+		return
+	if hero.Items.size() >= 2:
+		hero.StackRandomItem()
+		return
+	var choices := preload("res://Scripts/ItemCatalog.gd").choices()
+	if not IsHumanTurn():
+		hero.EquipItem(choices.pick_random())
+		return
+	ItemHeroInspected.emit(hero)
+	var selected: int = await item_choice.choose(hero, choices)
+	hero.EquipItem(selected)
 
 func FinishTurn() -> void:
 	TurnFinished.emit(currentPlayerColor)

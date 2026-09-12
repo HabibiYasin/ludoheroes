@@ -23,6 +23,9 @@ var idle_controller: Node
 var idle_countdown: Label
 var idle_warning: Label
 var round_label: Label
+var item_icons: Array[TextureRect] = []
+var item_counts: Array[Label] = []
+var item_stats: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -34,6 +37,7 @@ func _ready() -> void:
 	round_label = _label(round_panel, "", Rect2(0, 0, 180, 78), 26, INK)
 	var board: BoardManager = get_parent().get_node("CoreGamplay/Board/board_GamePlay")
 	board.RoundChanged.connect(_refresh_round)
+	board.ItemHeroInspected.connect(_inspect_hero)
 	_refresh_round(board.currentRound)
 	var hero := _panel(root, Rect2(40, 170, 380, 640))
 	_label(hero, "HERO DIPILIH", Rect2(20, 16, 340, 34), 24, GOLD)
@@ -48,7 +52,12 @@ func _ready() -> void:
 	for i in range(4):
 		var slot := _panel(hero, Rect2(28 + i * 84, 532, 72, 54), Color("304059"))
 		_label(slot, "—", Rect2(0, 8, 72, 44), 30)
-	_label(hero, "Skill & item segera hadir", Rect2(10, 597, 360, 30), 19, Color("aab8d0"))
+	for i in range(2):
+		var icon := _picture(hero, Rect2(196 + i * 84, 532, 72, 54), null)
+		icon.mouse_filter = Control.MOUSE_FILTER_STOP
+		item_icons.append(icon)
+		item_counts.append(_label(hero, "", Rect2(236 + i * 84, 562, 32, 24), 18, GOLD))
+	item_stats = _label(hero, "Move +0 | Skill Damage +0", Rect2(10, 597, 360, 30), 19, Color("aab8d0"))
 	var colors := [Color("29975a"), Color("e7ba19"), Color("168ccd"), Color("d93c40")]
 	var color_names := ["HIJAU", "KUNING", "BIRU", "MERAH"]
 	var player_order: Array[int] = []
@@ -120,13 +129,27 @@ func _inspect_hero(piece: Piece) -> void:
 		inspected_hero.StatsChanged.disconnect(_refresh_hero_stats)
 	inspected_hero = piece
 	piece.StatsChanged.connect(_refresh_hero_stats)
-	hero_icon.texture = piece.PieceSprite.texture
+	hero_icon.texture = piece.PieceSprite.texture if piece.PieceSprite != null else piece.PieceTexture
 	hero_name.text = piece.HeroId
 	_refresh_hero_stats()
 
 func _refresh_hero_stats() -> void:
 	if not is_instance_valid(inspected_hero):
 		return
+	var catalog = preload("res://Scripts/ItemCatalog.gd")
+	var ids := inspected_hero.Items.keys()
+	for i in range(2):
+		item_icons[i].texture = catalog.texture(ids[i]) if i < ids.size() else null
+		item_counts[i].text = "x%d" % inspected_hero.Items[ids[i]] if i < ids.size() else ""
+		item_icons[i].tooltip_text = catalog.NAMES[ids[i]] + "\n" + catalog.EFFECTS[ids[i]] if i < ids.size() else ""
+	item_stats.text = "Item Move +%d | Skill Damage +%d" % [inspected_hero.MoveBonus, inspected_hero.SkillDamage]
+	item_stats.tooltip_text = "Runner: +1 langkah saat dadu 1–3, hanya jika seluruh gerakan tetap di jalur luar." if inspected_hero.HasClass("Runner") else ""
+	item_stats.mouse_filter = Control.MOUSE_FILTER_STOP
+	if inspected_hero.HasClass("Runner"):
+		item_stats.text += "\nRunner: +1 langkah (dadu 1–3)"
+		item_stats.add_theme_font_size_override("font_size", 16)
+	else:
+		item_stats.add_theme_font_size_override("font_size", 19)
 	hero_health.text = "HP  %d / %d" % [inspected_hero.Health, inspected_hero.MaxHealth]
 	hero_attack.text = "ATK  %d" % inspected_hero.Attack
 	hero_physical_defense.text = "P. Def  %d" % inspected_hero.PhysicalDefense
