@@ -14,6 +14,15 @@ var Faction: String = ""
 var MaxHealth: int = 1
 var Health: int = 1
 var Attack: int = 0
+enum DamageType { PHYSICAL, MAGICAL }
+var PhysicalDefense: int = 0:
+	set(value):
+		PhysicalDefense = maxi(0, value)
+		StatsChanged.emit()
+var MagicalDefense: int = 0:
+	set(value):
+		MagicalDefense = maxi(0, value)
+		StatsChanged.emit()
 
 func InitializeStats() -> void:
 	if not HeroCatalog.HEROES.has(HeroId):
@@ -23,6 +32,8 @@ func InitializeStats() -> void:
 	Faction = stats[1]
 	Attack = stats[2]
 	MaxHealth = stats[3]
+	PhysicalDefense = stats[4]
+	MagicalDefense = stats[5]
 	Health = MaxHealth
 	StatsChanged.emit()
 
@@ -32,8 +43,9 @@ func HasClass(class_value: String) -> bool:
 			return true
 	return false
 
-func GetIncomingDamage(amount: int, direct: bool = true) -> int:
-	return maxi(0, amount - (1 if HasClass("Tank") and not direct else 0))
+func GetIncomingDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL) -> int:
+	var defense := MagicalDefense if damage_type == DamageType.MAGICAL else PhysicalDefense
+	return maxi(0, amount - defense - (1 if HasClass("Tank") and not direct else 0))
 
 func Heal(amount: int) -> void:
 	if Health <= 0 or amount <= 0 or Health >= MaxHealth:
@@ -51,8 +63,8 @@ func GetMoveDistance(dice_value: int) -> int:
 			return dice_value
 	return dice_value + 1
 
-func TakeDamage(amount: int, direct: bool = true) -> bool:
-	amount = GetIncomingDamage(amount, direct)
+func TakeDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL) -> bool:
+	amount = GetIncomingDamage(amount, direct, damage_type)
 	if Health <= 0 or amount <= 0:
 		return false
 	Health = maxi(0, Health - amount)

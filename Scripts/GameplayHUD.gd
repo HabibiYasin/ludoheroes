@@ -6,6 +6,7 @@ var root: Control
 var hero_icon: TextureRect
 var hero_name: Label
 var hero_stats: Label
+var hero_defenses: Label
 var hero_class: Label
 var inspected_hero: Piece
 var modal: ColorRect
@@ -32,17 +33,18 @@ func _ready() -> void:
 	var board: BoardManager = get_parent().get_node("CoreGamplay/Board/board_GamePlay")
 	board.RoundChanged.connect(_refresh_round)
 	_refresh_round(board.currentRound)
-	var hero := _panel(root, Rect2(40, 170, 380, 580))
+	var hero := _panel(root, Rect2(40, 170, 380, 640))
 	_label(hero, "HERO DIPILIH", Rect2(20, 16, 340, 34), 24, GOLD)
 	hero_icon = _picture(hero, Rect2(65, 55, 250, 245), null)
 	hero_name = _label(hero, "Ketuk hero di papan", Rect2(10, 305, 360, 42), 30)
 	hero_stats = _label(hero, "HP  - / -     ATK  -", Rect2(10, 355, 360, 38), 27)
-	hero_class = _label(hero, "Class: -", Rect2(10, 392, 360, 30), 21, GOLD)
-	_label(hero, "SKILLS                 ITEMS", Rect2(20, 428, 340, 32), 22, GOLD)
+	hero_defenses = _label(hero, "P.Def  -\nM.Def  -", Rect2(10, 395, 360, 60), 21)
+	hero_class = _label(hero, "Class: -", Rect2(10, 455, 360, 30), 21, GOLD)
+	_label(hero, "SKILLS                 ITEMS", Rect2(20, 490, 340, 32), 22, GOLD)
 	for i in range(4):
-		var slot := _panel(hero, Rect2(28 + i * 84, 470, 72, 54), Color("304059"))
+		var slot := _panel(hero, Rect2(28 + i * 84, 532, 72, 54), Color("304059"))
 		_label(slot, "—", Rect2(0, 8, 72, 44), 30)
-	_label(hero, "Skill & item segera hadir", Rect2(10, 535, 360, 30), 19, Color("aab8d0"))
+	_label(hero, "Skill & item segera hadir", Rect2(10, 597, 360, 30), 19, Color("aab8d0"))
 	var colors := [Color("29975a"), Color("e7ba19"), Color("168ccd"), Color("d93c40")]
 	var color_names := ["HIJAU", "KUNING", "BIRU", "MERAH"]
 	var player_order: Array[int] = []
@@ -122,6 +124,7 @@ func _refresh_hero_stats() -> void:
 	if not is_instance_valid(inspected_hero):
 		return
 	hero_stats.text = "HP  %d / %d     ATK  %d" % [inspected_hero.Health, inspected_hero.MaxHealth, inspected_hero.Attack]
+	hero_defenses.text = "P.Def  %d\nM.Def  %d" % [inspected_hero.PhysicalDefense, inspected_hero.MagicalDefense]
 	hero_class.text = "Class: %s%s" % [inspected_hero.HeroClass, " | Gugur" if inspected_hero.Health == 0 else ""]
 
 func _react(value: String) -> void:

@@ -6,7 +6,7 @@ var stage: Control
 
 func queue_attack(attacker: Piece, defender: Piece, damage: int = -1) -> void:
 	if damage < 0:
-		damage = attacker.Attack
+		damage = defender.GetIncomingDamage(attacker.Attack)
 	pending.append({
 		"attacker": attacker.PieceSprite.texture,
 		"defender": defender.PieceSprite.texture,

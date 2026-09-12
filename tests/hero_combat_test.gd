@@ -14,6 +14,7 @@ func _run() -> void:
 		for hero: Piece in group.Pieces:
 			assert(catalog.HEROES.has(hero.HeroId))
 			assert(hero.Health == hero.MaxHealth and hero.Health > 0)
+			assert(hero.PhysicalDefense == 0 and hero.MagicalDefense == 0)
 			assert(hero.HeroClass == catalog.HEROES[hero.HeroId][0])
 			seen[hero.HeroId] = true
 	assert(seen.size() == 16)
@@ -70,6 +71,19 @@ func _run() -> void:
 	assert(not target.TakeDamage(-2) and target.Health == 4)
 	assert(target.TakeDamage(99) and target.Health == 0)
 	print("PASS: 16 hero classes/stats, damage, surviving shared cell, lethal landing, dice continuation, base return, respawn, live HUD, safe/friendly cells, zero attack and HP clamp")
+	assert(hud.hero_defenses.text == "P.Def  0\nM.Def  0")
+	target.Health = 4
+	target.PhysicalDefense = 2
+	target.MagicalDefense = 1
+	assert(hud.hero_defenses.text == "P.Def  2\nM.Def  1")
+	assert(not target.TakeDamage(2) and target.Health == 4)
+	assert(not target.TakeDamage(3) and target.Health == 3)
+	assert(not target.TakeDamage(2, true, Piece.DamageType.MAGICAL) and target.Health == 2)
+	assert(target.GetIncomingDamage(3, false) == 0) # Tank passive stacks.
+	assert(target.GetIncomingDamage(0, true, Piece.DamageType.MAGICAL) == 0)
+	target.PhysicalDefense = -1
+	assert(target.PhysicalDefense == 0)
+	print("PASS: physical/magical defenses, blocked damage, Tank stacking, live defense HUD")
 	_test_highest_health_target()
 	get_tree().quit()
 func _test_highest_health_target() -> void:
