@@ -25,7 +25,8 @@ var idle_warning: Label
 var round_label: Label
 var item_icons: Array[TextureRect] = []
 var item_counts: Array[Label] = []
-var item_stats: Label
+var hero_move: Label
+var hero_skill_damage: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -47,17 +48,18 @@ func _ready() -> void:
 	hero_attack = _label(hero, "ATK  -", Rect2(190, 355, 180, 38), 27)
 	hero_physical_defense = _label(hero, "P. Def  -", Rect2(10, 395, 180, 38), 27)
 	hero_magical_defense = _label(hero, "M.Def  -", Rect2(190, 395, 180, 38), 27)
-	hero_class = _label(hero, "Class: -", Rect2(10, 455, 360, 30), 21, GOLD)
-	_label(hero, "SKILLS                 ITEMS", Rect2(20, 490, 340, 32), 22, GOLD)
+	hero_move = _label(hero, "Move  +0", Rect2(10, 435, 180, 38), 27)
+	hero_skill_damage = _label(hero, "S.Dmg  +0", Rect2(190, 435, 180, 38), 27)
+	hero_class = _label(hero, "Class: -", Rect2(10, 485, 360, 30), 21, GOLD)
+	_label(hero, "SKILLS                 ITEMS", Rect2(20, 520, 340, 32), 22, GOLD)
 	for i in range(4):
-		var slot := _panel(hero, Rect2(28 + i * 84, 532, 72, 54), Color("304059"))
+		var slot := _panel(hero, Rect2(28 + i * 84, 562, 72, 54), Color("304059"))
 		_label(slot, "—", Rect2(0, 8, 72, 44), 30)
 	for i in range(2):
-		var icon := _picture(hero, Rect2(196 + i * 84, 532, 72, 54), null)
+		var icon := _picture(hero, Rect2(196 + i * 84, 562, 72, 54), null)
 		icon.mouse_filter = Control.MOUSE_FILTER_STOP
 		item_icons.append(icon)
-		item_counts.append(_label(hero, "", Rect2(236 + i * 84, 562, 32, 24), 18, GOLD))
-	item_stats = _label(hero, "Move +0 | Skill Damage +0", Rect2(10, 597, 360, 30), 19, Color("aab8d0"))
+		item_counts.append(_label(hero, "", Rect2(236 + i * 84, 592, 32, 24), 18, GOLD))
 	var colors := [Color("29975a"), Color("e7ba19"), Color("168ccd"), Color("d93c40")]
 	var color_names := ["HIJAU", "KUNING", "BIRU", "MERAH"]
 	var player_order: Array[int] = []
@@ -142,14 +144,8 @@ func _refresh_hero_stats() -> void:
 		item_icons[i].texture = catalog.texture(ids[i]) if i < ids.size() else null
 		item_counts[i].text = "x%d" % inspected_hero.Items[ids[i]] if i < ids.size() else ""
 		item_icons[i].tooltip_text = catalog.NAMES[ids[i]] + "\n" + catalog.EFFECTS[ids[i]] if i < ids.size() else ""
-	item_stats.text = "Item Move +%d | Skill Damage +%d" % [inspected_hero.MoveBonus, inspected_hero.SkillDamage]
-	item_stats.tooltip_text = "Runner: +1 langkah saat dadu 1–3, hanya jika seluruh gerakan tetap di jalur luar." if inspected_hero.HasClass("Runner") else ""
-	item_stats.mouse_filter = Control.MOUSE_FILTER_STOP
-	if inspected_hero.HasClass("Runner"):
-		item_stats.text += "\nRunner: +1 langkah (dadu 1–3)"
-		item_stats.add_theme_font_size_override("font_size", 16)
-	else:
-		item_stats.add_theme_font_size_override("font_size", 19)
+	hero_move.text = "Move  +%d" % inspected_hero.MoveBonus
+	hero_skill_damage.text = "S.Dmg  +%d" % inspected_hero.SkillDamage
 	hero_health.text = "HP  %d / %d" % [inspected_hero.Health, inspected_hero.MaxHealth]
 	hero_attack.text = "ATK  %d" % inspected_hero.Attack
 	hero_physical_defense.text = "P. Def  %d" % inspected_hero.PhysicalDefense
