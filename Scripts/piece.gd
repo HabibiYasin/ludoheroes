@@ -79,17 +79,20 @@ func Heal(amount: int) -> void:
 	StatsChanged.emit()
 
 func GetMoveDistance(dice_value: int) -> int:
-	return _class_move_distance(dice_value) + (MoveBonus if not IsInLobby() and not IsInHome else 0)
-
-func _class_move_distance(dice_value: int) -> int:
-	if not HasClass("Runner") or IsInLobby() or IsInHome or dice_value not in [1, 2, 3] or wayPointManager == null:
+	if IsInLobby() or IsInHome:
 		return dice_value
-	# The entire boosted move must stay on the shared track.
-	for index in range(CurrentPosition, CurrentPosition + dice_value + 2):
+	var distance := dice_value + MoveBonus
+	if wayPointManager == null:
+		return distance
+	if HasClass("Runner") and dice_value in [1, 2, 3]:
+		distance += 1
+	# All bonuses apply only when the entire move stays on the shared track.
+	# Entering or moving inside the home lane always uses the raw die.
+	for index in range(CurrentPosition, CurrentPosition + distance + 1):
 		var cell := wayPointManager.GetWayPoint(index, CurrentPlayerColor)
 		if cell == null or cell.get_parent() != wayPointManager.main_path:
 			return dice_value
-	return dice_value + 1
+	return distance
 
 func TakeDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL) -> bool:
 	amount = GetIncomingDamage(amount, direct, damage_type)
