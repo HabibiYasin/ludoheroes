@@ -28,14 +28,14 @@ func _run() -> void:
 	cell.SetPiece(target)
 	GameManager.HeroInspected.emit(target)
 	var hud = game.get_child(game.get_child_count() - 1)
-	assert(hud.hero_stats.text == "HP  4 / 4     ATK  1")
+	assert(hud.hero_health.text == "HP  4 / 4" and hud.hero_attack.text == "ATK  1")
 	attacker.SetCurrentPositionAndCheckKill(0)
 	board._on_dice_root_on_dice_rolled([1, 2])
 	await board._on_player_select_piece(attacker)
 	assert(target.Health == 3 and not target.IsInLobby())
 	assert(cell.myHoldings.size() == 2 and not board.hasKill)
 	assert(board.remainingDice == [0, 2])
-	assert(hud.hero_stats.text == "HP  3 / 4     ATK  1")
+	assert(hud.hero_health.text == "HP  3 / 4" and hud.hero_attack.text == "ATK  1")
 	cell.SetPiece(attacker) # Re-registering does not attack again.
 	assert(target.Health == 3)
 	# Lethal landing uses the real asynchronous death/turn pipeline.
@@ -47,10 +47,10 @@ func _run() -> void:
 	assert(target.Health == 0 and target.IsInLobby())
 	assert(target.position == target.LobbyPosition and target.CurrentWayPoint == null)
 	assert(not cell.myHoldings.has(target) and board.remainingDice == [0, 2])
-	assert(hud.hero_stats.text == "HP  0 / 4     ATK  1")
+	assert(hud.hero_health.text == "HP  0 / 4" and hud.hero_attack.text == "ATK  1")
 	target.SetCurrentPositionAndCheckKill(0)
 	assert(target.Health == 4 and not target.IsInLobby())
-	assert(hud.hero_stats.text == "HP  4 / 4     ATK  1")
+	assert(hud.hero_health.text == "HP  4 / 4" and hud.hero_attack.text == "ATK  1")
 	# Isolated safe cell, friendly landing, and zero attack all preserve HP.
 	var safe := WayPoint.new()
 	safe.isThisSafePlace = true
@@ -71,11 +71,11 @@ func _run() -> void:
 	assert(not target.TakeDamage(-2) and target.Health == 4)
 	assert(target.TakeDamage(99) and target.Health == 0)
 	print("PASS: 16 hero classes/stats, damage, surviving shared cell, lethal landing, dice continuation, base return, respawn, live HUD, safe/friendly cells, zero attack and HP clamp")
-	assert(hud.hero_defenses.text == "P.Def  0\nM.Def  0")
+	assert(hud.hero_physical_defense.text == "P. Def  0" and hud.hero_magical_defense.text == "M.Def  0")
 	target.Health = 4
 	target.PhysicalDefense = 2
 	target.MagicalDefense = 1
-	assert(hud.hero_defenses.text == "P.Def  2\nM.Def  1")
+	assert(hud.hero_physical_defense.text == "P. Def  2" and hud.hero_magical_defense.text == "M.Def  1")
 	assert(not target.TakeDamage(2) and target.Health == 4)
 	assert(not target.TakeDamage(3) and target.Health == 3)
 	assert(not target.TakeDamage(2, true, Piece.DamageType.MAGICAL) and target.Health == 2)

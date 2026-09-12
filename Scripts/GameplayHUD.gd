@@ -5,8 +5,10 @@ const INK := Color("17243c")
 var root: Control
 var hero_icon: TextureRect
 var hero_name: Label
-var hero_stats: Label
-var hero_defenses: Label
+var hero_health: Label
+var hero_attack: Label
+var hero_physical_defense: Label
+var hero_magical_defense: Label
 var hero_class: Label
 var inspected_hero: Piece
 var modal: ColorRect
@@ -37,8 +39,10 @@ func _ready() -> void:
 	_label(hero, "HERO DIPILIH", Rect2(20, 16, 340, 34), 24, GOLD)
 	hero_icon = _picture(hero, Rect2(65, 55, 250, 245), null)
 	hero_name = _label(hero, "Ketuk hero di papan", Rect2(10, 305, 360, 42), 30)
-	hero_stats = _label(hero, "HP  - / -     ATK  -", Rect2(10, 355, 360, 38), 27)
-	hero_defenses = _label(hero, "P.Def  -\nM.Def  -", Rect2(10, 395, 360, 60), 21)
+	hero_health = _label(hero, "HP  - / -", Rect2(10, 355, 180, 38), 27)
+	hero_attack = _label(hero, "ATK  -", Rect2(190, 355, 180, 38), 27)
+	hero_physical_defense = _label(hero, "P. Def  -", Rect2(10, 395, 180, 38), 27)
+	hero_magical_defense = _label(hero, "M.Def  -", Rect2(190, 395, 180, 38), 27)
 	hero_class = _label(hero, "Class: -", Rect2(10, 455, 360, 30), 21, GOLD)
 	_label(hero, "SKILLS                 ITEMS", Rect2(20, 490, 340, 32), 22, GOLD)
 	for i in range(4):
@@ -123,8 +127,10 @@ func _inspect_hero(piece: Piece) -> void:
 func _refresh_hero_stats() -> void:
 	if not is_instance_valid(inspected_hero):
 		return
-	hero_stats.text = "HP  %d / %d     ATK  %d" % [inspected_hero.Health, inspected_hero.MaxHealth, inspected_hero.Attack]
-	hero_defenses.text = "P.Def  %d\nM.Def  %d" % [inspected_hero.PhysicalDefense, inspected_hero.MagicalDefense]
+	hero_health.text = "HP  %d / %d" % [inspected_hero.Health, inspected_hero.MaxHealth]
+	hero_attack.text = "ATK  %d" % inspected_hero.Attack
+	hero_physical_defense.text = "P. Def  %d" % inspected_hero.PhysicalDefense
+	hero_magical_defense.text = "M.Def  %d" % inspected_hero.MagicalDefense
 	hero_class.text = "Class: %s%s" % [inspected_hero.HeroClass, " | Gugur" if inspected_hero.Health == 0 else ""]
 
 func _react(value: String) -> void:
