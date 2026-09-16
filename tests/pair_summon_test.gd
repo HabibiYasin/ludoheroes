@@ -1,11 +1,14 @@
 extends Node
 
+var _board: BoardManager
+
 func _ready() -> void:
 	get_tree().create_timer(20).timeout.connect(func(): get_tree().quit(1))
 	var game = load("res://Levels/Level_MainGamePlay.tscn").instantiate()
 	game.get_node("CoreGamplay/Board/board_GamePlay").BotsEnabled = false
 	add_child(game)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
+	_board = board
 	for pair in [[3, 3], [4, 2], [2, 4], [5, 1], [1, 5]]:
 		var group := board.piecesManager.GetPieceGroupBasedOnType(board.currentPlayerColor)
 		for piece in group.Pieces:
@@ -55,7 +58,19 @@ func _ready() -> void:
 	var bot = game.get_node("CoreGamplay/BotController")
 	assert(not bot.ChooseMove().is_empty())
 	bot._play_move()
+	while board.item_choice.stage != null:
+		await get_tree().process_frame
 	assert(board.remainingDice.is_empty())
 	assert(group.HasUnlockedAnyPiece())
 	print("PASS: invalid totals cannot summon; bot can use paired summon")
 	get_tree().quit()
+
+# Resolve the new spawn reward while these tests exercise dice rules.
+func _process(_delta: float) -> void:
+	var board := _board
+	if board == null or board.item_choice.offered.is_empty():
+		return
+	for id: int in board.item_choice.offered:
+		if id != 2:
+			board.item_choice._select(id)
+			return

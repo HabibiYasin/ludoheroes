@@ -1,10 +1,13 @@
 extends Node
 
+var _board: BoardManager
+
 func _ready() -> void:
 	var game = load("res://Levels/Level_MainGamePlay.tscn").instantiate()
 	game.get_node("CoreGamplay/Board/board_GamePlay").BotsEnabled = false
 	add_child(game)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
+	_board = board
 	var dice: Dice = game.get_node("CoreGamplay/Dice/DiceRoot")
 	var group: PlayerPiecesGroup = board.piecesManager.GetPieceGroupBasedOnType(board.currentPlayerColor)
 	var first: Piece = group.Pieces[0]
@@ -92,3 +95,13 @@ func _ready() -> void:
 	assert(seen.size() > 1)
 	print("PASS: two dice, same/split pieces, selection, consumed dice, turn progression, no legal moves, random rolls")
 	get_tree().quit()
+
+# Resolve the new spawn reward while these tests exercise dice rules.
+func _process(_delta: float) -> void:
+	var board := _board
+	if board == null or board.item_choice.offered.is_empty():
+		return
+	for id: int in board.item_choice.offered:
+		if id != 2:
+			board.item_choice._select(id)
+			return

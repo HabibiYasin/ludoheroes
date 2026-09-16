@@ -1,33 +1,40 @@
 extends Node2D
 
-# Each base occupies six cells of the square 15-cell board.
 const BASE_ORIGINS := {
+	"Green": Vector2(0.0, 0.6),
 	"Yellow": Vector2(0.0, 0.0),
 	"Blue": Vector2(0.6, 0.0),
-	"Green": Vector2(0.0, 0.6),
 	"Red": Vector2(0.6, 0.6),
 }
+var base_artworks: Array[Sprite2D] = []
 
 func _ready() -> void:
-	_setup_board_places()
+	# Keep legacy Places hidden; static base art and turn effects are independent.
+	for color_name in ["Green", "Yellow", "Blue", "Red"]:
+		var place := get_node_or_null("CoreGamplay/Board/board_GamePlay/Sprite2D_Board/Sprite2D_" + color_name)
+		if place != null:
+			place.hide()
+	_setup_base_artworks()
 	var hud := CanvasLayer.new()
 	hud.set_script(load("res://Scripts/GameplayHUD.gd"))
 	add_child(hud)
 	get_viewport().size_changed.connect(_update_layout)
 	_update_layout()
 
-func _setup_board_places() -> void:
+func _setup_base_artworks() -> void:
 	var board_sprite: Sprite2D = $CoreGamplay/Board/board_GamePlay/Sprite2D_Board
 	var artwork: Sprite2D = board_sprite.get_node("Artwork")
 	var texture_size := artwork.texture.get_size()
 	for color_name in BASE_ORIGINS:
-		var place: Sprite2D = board_sprite.get_node("Sprite2D_" + color_name)
 		var crop := AtlasTexture.new()
 		crop.atlas = artwork.texture
 		crop.region = Rect2(BASE_ORIGINS[color_name] * texture_size, texture_size * 0.4)
 		crop.filter_clip = true
-		place.texture = crop
-		place.visible = true
+		var base := Sprite2D.new()
+		base.name = "BaseArtwork" + color_name
+		base.texture = crop
+		board_sprite.add_child(base)
+		base_artworks.append(base)
 
 func _update_layout() -> void:
 	var viewport_size := get_viewport_rect().size
@@ -41,13 +48,12 @@ func _update_layout() -> void:
 	var artwork: Sprite2D = board_sprite.get_node("Artwork")
 	var texture_size_board := artwork.texture.get_size()
 	artwork.scale = Vector2.ONE * (1804.0 / maxf(texture_size_board.x, texture_size_board.y))
-	for color_name in ["Green", "Yellow", "Blue", "Red"]:
-		var place: Sprite2D = board_sprite.get_node("Sprite2D_" + color_name)
-		var crop := place.texture as AtlasTexture
-		place.position = (crop.region.get_center() - texture_size_board * 0.5) * artwork.scale
-		place.scale = artwork.scale
-		# Move with the board, but keep the baked-in base art facing the player.
-		place.global_rotation = 0.0
+	for base in base_artworks:
+		var crop := base.texture as AtlasTexture
+		base.position = (crop.region.get_center() - texture_size_board * 0.5) * artwork.scale
+		base.scale = artwork.scale
+		# Follow the base's position, but keep its illustration facing the player.
+		base.global_rotation = 0.0
 	for group in $CoreGamplay/Pieces.get_children():
 		for piece: Piece in group.Pieces:
 			piece.global_rotation = 0.0

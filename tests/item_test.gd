@@ -6,6 +6,8 @@ func _ready() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	get_tree().create_timer(20).timeout.connect(func(): get_tree().quit(1))
+	GameManager.LocalPlayerColor = GameManager.PlayerColor.Green
 	for id in range(6):
 		var hero := Piece.new()
 		hero.HeroId = "Garruk"
@@ -36,15 +38,34 @@ func _run() -> void:
 	var hero: Piece = board.piecesManager.GreenPieces.Pieces[0]
 	var stars: Array[int] = []
 	for color in range(4):
-		assert(not board.way_points.IsItemTile(board.way_points.GetWayPoint(0, color)))
+		assert(board.way_points.IsItemTile(board.way_points.GetWayPoint(0, color)))
 	for index in range(board.way_points.green_path.size()):
 		if board.way_points.IsItemTile(board.way_points.green_path[index]):
 			stars.append(index)
-	assert(stars.size() == 4)
-	hero.SetCurrentPositionAndCheckKill(0)
-	await board.AwardLandingItem(hero)
-	assert(hero.Items.is_empty() and board.item_choice.stage == null)
-	var destination := stars[0]
+	assert(stars.size() == 8)
+	# Summoning onto our own spawn awards an item before consuming the die.
+	board._on_dice_root_on_dice_rolled([6, 4])
+	board._on_player_select_piece(hero)
+	while board.item_choice.stage == null:
+		await get_tree().process_frame
+	assert(board.remainingDice == [6, 4])
+	var spawn_choice: int = board.item_choice.offered[0]
+	await board.item_choice._select(spawn_choice, true)
+	assert(hero.Items.get(spawn_choice) == 1 and board.remainingDice == [0, 4])
+	hero.MoveBonus = 0
+	# Award checks include every enemy spawn, regardless of the hero's color.
+	board.BotsEnabled = true
+	board.currentPlayerColor = GameManager.PlayerColor.Red
+	for color in range(1, 4):
+		var visitor := Piece.new()
+		visitor.InitializeStats()
+		visitor.CurrentWayPoint = board.way_points.GetWayPoint(0, color)
+		await board.AwardLandingItem(visitor)
+		assert(visitor.Items.size() == 1)
+		visitor.free()
+	board.BotsEnabled = false
+	board.currentPlayerColor = GameManager.PlayerColor.Green
+	var destination := stars[1]
 	hero.CurrentWayPoint.RemoveMyRef(hero)
 	hero.SetCurrentPositionAndCheckKill(destination - 1)
 	board._on_dice_root_on_dice_rolled([1, 4])
@@ -54,13 +75,14 @@ func _run() -> void:
 	assert(GameManager.GameCurrentState == GameManager.GameStateEnum.Null)
 	assert(board.remainingDice == [1, 4])
 	var chosen: int = board.item_choice.offered[0]
-	board.item_choice._select(chosen, true)
-	assert(hero.Items.get(chosen) == 1 and board.remainingDice == [0, 4])
+	await board.item_choice._select(chosen, true)
+	assert(hero.Items.has(chosen) and board.remainingDice == [0, 4])
+	hero.Items.clear()
 	# A second award can stack the same type without using another slot.
 	board.AwardLandingItem(hero)
 	assert(board.item_choice.stage != null)
 	assert(board.item_choice.remaining == 10.0)
-	board.item_choice._select(board.item_choice.offered[0])
+	await board.item_choice._select(board.item_choice.offered[0])
 	while hero.Items.size() < 2:
 		for id in range(6):
 			if not hero.Items.has(id):
@@ -82,9 +104,14 @@ func _run() -> void:
 	await get_tree().process_frame
 	assert(board.item_choice.remaining == seconds)
 	get_tree().paused = false
+	while board.item_choice.entering:
+		await get_tree().process_frame
 	board.item_choice._process(4.9)
 	assert(other.Items.is_empty() and board.item_choice.stage != null)
 	board.item_choice._process(0.11)
+	assert(board.item_choice.offered.is_empty())
+	while board.item_choice.stage != null:
+		await get_tree().process_frame
 	assert(other.Items.size() == 1 and board.item_choice.stage == null)
 	var bot: Piece = board.piecesManager.RedPieces.Pieces[0]
 	bot.SetCurrentPositionAndCheckKill(board.way_points.red_path.find(hero.CurrentWayPoint))
@@ -105,5 +132,5 @@ func _run() -> void:
 	mover.free()
 	game.queue_free()
 	await get_tree().process_frame
-	print("PASS: six item stats, unique offers, two type cap, stacks, four stars, no start rewards, manual/timeout/bot awards, pause, die continuation and move bonus")
+	print("PASS: six item stats, unique offers, two type cap, stacks, eight reward tiles, own/enemy spawn rewards, summon reward, manual/timeout/bot awards, pause, die continuation and move bonus")
 	get_tree().quit()

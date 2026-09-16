@@ -3,13 +3,12 @@ extends Node2D
 
 @export var way_points: WayPointsManager
 @export var piecesManager: PiecesManager
-@export var animation_PlayerForPlaces: AnimationPlayer
 @export var BotsEnabled: bool = true
 @export var HumanPlayerColor: GameManager.PlayerColor = GameManager.PlayerColor.Green
 
 var currentPlayerTurnIndex: int = -1
 var currentDiceValue: int = -1
-var currentAnimationPlaceName: String = ""
+var turn_indicator: Node2D
 var hasKill: bool = false
 var currentPlayerColor: GameManager.PlayerColor
 
@@ -34,6 +33,8 @@ func _ready() -> void:
 	add_child(attack_presentation)
 	item_choice = preload("res://Scripts/ItemChoice.gd").new()
 	add_child(item_choice)
+	turn_indicator = preload("res://Scripts/TurnIndicator.gd").new()
+	add_child(turn_indicator)
 	HumanPlayerColor = GameManager.LocalPlayerColor
 	currentPlayerTurnIndex = int(HumanPlayerColor) - 1
 	GameManager.OnPlayerSelectPiece.connect(_on_player_select_piece)
@@ -77,8 +78,7 @@ func IsHumanTurn() -> bool:
 	return not BotsEnabled or currentPlayerColor == HumanPlayerColor
 
 func _on_dice_root_on_dice_roll_begin() -> void:
-	if animation_PlayerForPlaces != null:
-		animation_PlayerForPlaces.stop()
+	turn_indicator.hide()
 
 func _on_dice_root_on_dice_rolled(values: Array[int]) -> void:
 	remainingDice.assign(values)
@@ -128,6 +128,7 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 		)
 		moveThisPiece.SetCurrentPositionAndCheckKill(0)
 		await _wait_for_kill_if_needed()
+		await AwardLandingItem(moveThisPiece)
 		if use_pair:
 			remainingDice.fill(0)
 		_complete_die()
@@ -171,8 +172,7 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 		TurnFinished.emit(currentPlayerColor)
 		GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.GameOver)
 		StopPieceAnimation()
-		if animation_PlayerForPlaces != null:
-			animation_PlayerForPlaces.stop()
+		turn_indicator.hide()
 		var results := piecesManager.GetMatchResults()
 		print("GAME OVER - highest score: ", results[0].score, ", player color: ", results[0].color)
 		return
@@ -246,7 +246,7 @@ func UpdatePlayerTurn() -> void:
 
 		var piece_group := piecesManager.GetPieceGroupBasedOnType(currentPlayerColor)
 		if piece_group != null and not piece_group.HasThisPlayerCompleted():
-			PlayPlaceAnimation()
+			UpdateTurnIndicator()
 			return
 
 		attempts += 1
@@ -266,20 +266,8 @@ func _color_from_turn_index(index: int) -> GameManager.PlayerColor:
 		_:
 			return GameManager.PlayerColor.Green
 
-func PlayPlaceAnimation() -> void:
-	match currentPlayerTurnIndex:
-		0:
-			currentAnimationPlaceName = "GreenPlaceAnimation"
-		1:
-			currentAnimationPlaceName = "YellowPlaceAnimation"
-		2:
-			currentAnimationPlaceName = "BluePlaceAnimation"
-		3:
-			currentAnimationPlaceName = "RedPlaceAnimation"
-
-	if animation_PlayerForPlaces != null:
-		animation_PlayerForPlaces.stop()
-		animation_PlayerForPlaces.play(currentAnimationPlaceName)
+func UpdateTurnIndicator() -> void:
+	turn_indicator.set_faction(currentPlayerColor)
 
 func PlayPieceAnimation() -> void:
 	piecesManager.PlayAnimationByPlayerIndex(currentPlayerColor)
