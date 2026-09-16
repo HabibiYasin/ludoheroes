@@ -195,7 +195,9 @@ func AwardLandingItem(hero: Piece) -> void:
 		hero.EquipItem(choices.pick_random())
 		return
 	ItemHeroInspected.emit(hero)
-	var selected: int = await item_choice.choose(hero, choices)
+	var idle_controller = get_node("../../PlayerIdleController")
+	var timeout_seconds := 5.0 if idle_controller.AutoPlaying else 10.0
+	var selected: int = await item_choice.choose(hero, choices, timeout_seconds)
 	hero.EquipItem(selected)
 
 func FinishTurn() -> void:

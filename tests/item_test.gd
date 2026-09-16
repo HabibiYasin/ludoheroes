@@ -59,6 +59,7 @@ func _run() -> void:
 	# A second award can stack the same type without using another slot.
 	board.AwardLandingItem(hero)
 	assert(board.item_choice.stage != null)
+	assert(board.item_choice.remaining == 10.0)
 	board.item_choice._select(board.item_choice.offered[0])
 	while hero.Items.size() < 2:
 		for id in range(6):
@@ -71,14 +72,19 @@ func _run() -> void:
 	assert(int(hero.Items.values()[0]) + int(hero.Items.values()[1]) == total + 1)
 	var other: Piece = board.piecesManager.GreenPieces.Pieces[1]
 	other.SetCurrentPositionAndCheckKill(destination)
+	var idle = game.get_node("CoreGamplay/PlayerIdleController")
+	idle.AutoPlaying = true
 	board.AwardLandingItem(other)
 	assert(board.item_choice.stage != null)
+	assert(board.item_choice.remaining == 5.0)
 	get_tree().paused = true
 	var seconds: float = board.item_choice.remaining
 	await get_tree().process_frame
 	assert(board.item_choice.remaining == seconds)
 	get_tree().paused = false
-	board.item_choice._process(11.0)
+	board.item_choice._process(4.9)
+	assert(other.Items.is_empty() and board.item_choice.stage != null)
+	board.item_choice._process(0.11)
 	assert(other.Items.size() == 1 and board.item_choice.stage == null)
 	var bot: Piece = board.piecesManager.RedPieces.Pieces[0]
 	bot.SetCurrentPositionAndCheckKill(board.way_points.red_path.find(hero.CurrentWayPoint))

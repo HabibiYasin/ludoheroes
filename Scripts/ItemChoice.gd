@@ -11,9 +11,9 @@ func _ready() -> void:
 	layer = 1
 	get_viewport().size_changed.connect(_resize)
 
-func choose(hero: Piece, choices: Array[int]) -> int:
+func choose(hero: Piece, choices: Array[int], timeout_seconds: float = 10.0) -> int:
 	offered = choices
-	remaining = 10.0
+	remaining = timeout_seconds
 	stage = Control.new()
 	add_child(stage)
 	var shade := ColorRect.new()
