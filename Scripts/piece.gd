@@ -143,12 +143,14 @@ func GetBoardDisplayScale() -> Vector2:
 	return _normal_scale * HERO_DISPLAY_SCALE
 
 func SetSharedCellLayout(offset: Vector2, slot_size: Vector2 = Vector2.ZERO) -> void:
+	# Local heroes stay in front of opponents when sharing a tile.
+	z_index = 1 if slot_size != Vector2.ZERO and CurrentPlayerColor == GameManager.LocalPlayerColor else 0
 	if PieceSprite == null or PieceSprite.texture == null:
 		return
 	var fit := 1.0
 	if slot_size != Vector2.ZERO:
 		var normal_size := PieceSprite.texture.get_size() * _normal_scale.abs()
-		fit = 2.0 * minf(1.0, minf(slot_size.x / normal_size.x, slot_size.y / normal_size.y))
+		fit = 4.0 * minf(1.0, minf(slot_size.x / normal_size.x, slot_size.y / normal_size.y))
 	scale = _normal_scale * fit * HERO_DISPLAY_SCALE
 	PieceSprite.position = _normal_sprite_position + offset / scale
 
@@ -266,12 +268,25 @@ func CelebrateFinish() -> void:
 	hide()
 	finish_marker = FinishCelebration.new()
 	finish_marker.marker = true
+	finish_marker.marker_texture = FinishCelebration.FACTION_MARKERS.get(Faction)
 	get_parent().add_child(finish_marker)
 	finish_marker.position = LobbyPosition
 	finish_marker.scale = Vector2.ONE * 1.85
 	finish_marker.global_rotation = 0.0
 	finish_marker.z_index = 10
+	UpdateFinishMarkerPosition()
 	await get_tree().create_timer(0.75, false).timeout
+
+func UpdateFinishMarkerPosition() -> void:
+	if not is_instance_valid(finish_marker):
+		return
+	var board := get_tree().get_first_node_in_group("BoardManager")
+	if board == null:
+		return
+	var color_name: String = GameManager.PlayerColor.keys()[CurrentPlayerColor]
+	var base := board.get_node_or_null("Sprite2D_Board/Sprite2D_" + color_name) as Sprite2D
+	if base != null and base.texture is AtlasTexture:
+		finish_marker.align_to_base(base, get_parent().to_global(LobbyPosition), Faction)
 
 func _reset_finish_presentation() -> void:
 	if is_instance_valid(finish_marker):

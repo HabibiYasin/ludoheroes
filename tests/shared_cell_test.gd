@@ -16,25 +16,36 @@ func _ready() -> void:
 		cell.ClearMe()
 		for i in range(count):
 			cell.SetPiece(pieces[i])
-		var rectangles: Array[Rect2] = []
 		for piece in cell.myHoldings:
 			var size := piece.PieceSprite.texture.get_size() * piece.scale
 			var center := piece.PieceSprite.position * piece.scale
 			var rect := Rect2(center - size * 0.5, size)
-			assert(Rect2(-112, -112, 224, 224).encloses(rect))
-			for other in rectangles:
-				assert(not rect.intersects(other))
-			rectangles.append(rect)
-		print("PASS: ", count, " heroes use enlarged shared layout without overlap")
+			assert(Rect2(-224, -224, 448, 448).encloses(rect))
+		print("PASS: ", count, " heroes use enlarged compact shared layout")
+	var original_color := GameManager.LocalPlayerColor
+	for color in range(4):
+		GameManager.LocalPlayerColor = color
+		cell._update_shared_layout()
+		for own in pieces:
+			if own.CurrentPlayerColor != color:
+				continue
+			for opponent in pieces:
+				if opponent.CurrentPlayerColor != color:
+					assert(own.z_index > opponent.z_index)
+	GameManager.LocalPlayerColor = original_color
+	cell._update_shared_layout()
+	print("PASS: local heroes render above opponents for all four player colors")
 	for i in range(1, pieces.size()):
 		cell.RemoveMyRef(pieces[i])
 	assert(pieces[0].scale.is_equal_approx(normal_scale))
+	assert(pieces[0].z_index == 0)
 	assert(pieces[0].PieceSprite.position.is_zero_approx())
 	cell.SetPiece(pieces[1])
 	pieces[1].CurrentWayPoint = cell
 	pieces[1].SendBackToLobby()
 	assert(cell.myHoldings.size() == 1)
 	assert(pieces[0].scale.is_equal_approx(normal_scale))
+	assert(pieces[0].z_index == 0)
 	assert(pieces[1].PieceSprite.position.is_zero_approx())
 	assert(pieces[1].position == pieces[1].LobbyPosition)
 	cell.ClearMe()

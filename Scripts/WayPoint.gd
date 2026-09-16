@@ -49,7 +49,7 @@ func _update_shared_layout() -> void:
 		return
 	if count == 0:
 		return
-	# Keep enlarged heroes closer together while retaining a small gap.
+	# Keep enlarged heroes close together, allowing artwork to overlap.
 	# Artwork may extend beyond the cell; logical positions stay at its center.
 	var columns := ceili(sqrt(float(count)))
 	var rows := ceili(float(count) / columns)
@@ -59,7 +59,7 @@ func _update_shared_layout() -> void:
 		var column := index % columns
 		var row_count := mini(columns, count - row * columns)
 		var offset := Vector2((column - (row_count - 1) * 0.5) * slot.x, (row - (rows - 1) * 0.5) * slot.y)
-		myHoldings[index].SetSharedCellLayout(offset * 1.5, slot - Vector2(4, 4))
+		myHoldings[index].SetSharedCellLayout(offset * 2.0, slot - Vector2(4, 4))
 
 func HealFriends(incoming_piece: Piece) -> void:
 	if not incoming_piece.HasClass("Support") or incoming_piece.Health <= 0:

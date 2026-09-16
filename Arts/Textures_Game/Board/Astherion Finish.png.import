@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cikgvlusd53tq"
-path="res://.godot/imported/Board_Main_Heroes.png-2402c3d1f2a72c940670d123d30c299c.ctex"
+uid="uid://dp5tlg8xb4m27"
+path="res://.godot/imported/Astherion Finish.png-347a4da5c0a4c540314243be2a42d38e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Arts/Textures_Game/Board/Board_Main_Heroes.png"
-dest_files=["res://.godot/imported/Board_Main_Heroes.png-2402c3d1f2a72c940670d123d30c299c.ctex"]
+source_file="res://Arts/Textures_Game/Board/Astherion Finish.png"
+dest_files=["res://.godot/imported/Astherion Finish.png-347a4da5c0a4c540314243be2a42d38e.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

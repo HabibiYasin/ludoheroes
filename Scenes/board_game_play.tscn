@@ -19,26 +19,29 @@ _data = {
 "YellowPlaceAnimation": ExtResource("4_ylohl")
 }
 
-[node name="board_GamePlay" node_paths=PackedStringArray("animation_PlayerForPlaces") instance=ExtResource("1_yrf8r")]
+[node name="board_GamePlay" instance=ExtResource("1_yrf8r")]
 script = ExtResource("2_d30q8")
-animation_PlayerForPlaces = NodePath("AnimationPlayer")
 
 [node name="Sprite2D_Green" type="Sprite2D" parent="Sprite2D_Board" index="0"]
+visible = false
 position = Vector2(-538, 543)
 scale = Vector2(0.5717703, 0.5741627)
 texture = ExtResource("3_sna5g")
 
 [node name="Sprite2D_Yellow" type="Sprite2D" parent="Sprite2D_Board" index="1"]
+visible = false
 position = Vector2(-538, -540)
 scale = Vector2(0.5717703, 0.5741627)
 texture = ExtResource("2_m5yd0")
 
 [node name="Sprite2D_Blue" type="Sprite2D" parent="Sprite2D_Board" index="2"]
+visible = false
 position = Vector2(545, -540)
 scale = Vector2(0.5717703, 0.5741627)
 texture = ExtResource("5_3loxm")
 
 [node name="Sprite2D_Red" type="Sprite2D" parent="Sprite2D_Board" index="3"]
+visible = false
 position = Vector2(542, 540)
 scale = Vector2(0.5717703, 0.5741627)
 texture = ExtResource("6_to8xc")

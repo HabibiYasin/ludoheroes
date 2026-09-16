@@ -11,7 +11,7 @@ func _run() -> void:
 	game.get_node("CoreGamplay/PlayerIdleController").Enabled = false
 	add_child(game)
 	var paths := board.way_points
-	var star_names := ["8", "21", "34", "46"]
+	var star_names := ["8", "21", "34", "47"]
 	for color in range(4):
 		var path := paths.GetPath(color)
 		var found: Array[String] = []
@@ -42,10 +42,10 @@ func _run() -> void:
 			board.item_choice._select(board.item_choice.offered[0], true)
 			assert(hero.Items.size() == 1 and board.remainingDice == [0, 4])
 		hero.SendBackToLobby()
-	assert(not paths.main_path.get_node("0").isThisSafePlace)
-	assert(not paths.main_path.get_node("47").isThisSafePlace)
+	assert(paths.main_path.get_node("0").isThisSafePlace)
+	assert(not paths.main_path.get_node("46").isThisSafePlace)
 	# Green must complete the bottom edge before entering its home lane.
-	var expected_tail := ["48", "49", "50", "51", "0", "52"]
+	var expected_tail := ["48", "49", "50", "52"]
 	var green: Piece = board.piecesManager.GreenPieces.Pieces[0]
 	green.Items.clear()
 	green.MoveBonus = 0
@@ -67,7 +67,7 @@ func _run() -> void:
 	runner.MoveBonus = 0
 	while board.currentPlayerColor != GameManager.PlayerColor.Blue:
 		board.UpdatePlayerTurn()
-	var star_index := paths.blue_path.find(paths.main_path.get_node("46"))
+	var star_index := paths.blue_path.find(paths.main_path.get_node("47"))
 	runner.SetCurrentPositionAndCheckKill(star_index - 2)
 	assert(runner.GetMoveDistance(1) == 2)
 	board._on_dice_root_on_dice_rolled([1, 4])

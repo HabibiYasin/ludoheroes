@@ -9,14 +9,14 @@ func _run() -> void:
 	add_child(game)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
 	var paths := board.way_points
-	assert(paths.green_path[0] == paths.main_path.get_node("1"))
+	assert(paths.green_path[0] == paths.main_path.get_node("0"))
 	assert(paths.green_path[0].isThisSafePlace)
-	assert(paths.green_path[1] == paths.main_path.get_node("2"))
+	assert(paths.green_path[1] == paths.main_path.get_node("1"))
 	for color in range(4):
 		var hero: Piece = board.piecesManager.GetPieceGroupBasedOnType(color).Pieces[0]
 		var path: Array[WayPoint] = paths.GetPath(color)
-		assert(path.size() == [65, 64, 63, 64][color])
-		var home_count := 6 if color == GameManager.PlayerColor.Blue else 7
+		assert(path.size() == 57)
+		var home_count := 6
 		var last_shared := path.size() - home_count - 1
 		assert(path[last_shared].get_parent() == paths.main_path)
 		assert(path[last_shared + 1].get_parent() != paths.main_path)

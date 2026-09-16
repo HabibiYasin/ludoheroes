@@ -10,6 +10,21 @@ func _run() -> void:
 	game.get_node("CoreGamplay/PlayerIdleController").Enabled = false
 	add_child(game)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
+	# Every waypoint must land on a tile center in the new 15 x 15 artwork,
+	# including when the board is rotated for each local player.
+	var core: Node2D = game.get_node("CoreGamplay")
+	var artwork: Sprite2D = board.get_node("Sprite2D_Board/Artwork")
+	for rotation_index in range(4):
+		core.rotation = rotation_index * PI * 0.5
+		for color in range(4):
+			var occupied := {}
+			for cell in board.way_points.GetPath(color):
+				var pixel := artwork.to_local(cell.global_position) + artwork.texture.get_size() * 0.5
+				var grid := pixel / artwork.texture.get_size() * 15.0 - Vector2.ONE * 0.5
+				assert(grid.is_equal_approx(grid.round()), "Waypoint off tile center: %s" % cell.name)
+				assert(not occupied.has(grid.round()), "Duplicate tile in path: %s" % cell.name)
+				occupied[grid.round()] = true
+	core.rotation = 0.0
 	for color in range(4):
 		var path := board.way_points.GetPath(color)
 		# Artwork cells are about 100-122 units wide/high. A skipped cell exceeds 130.
@@ -37,7 +52,8 @@ func _run() -> void:
 					assert(hero.CurrentWayPoint == null and not hero.visible, hero.HeroId)
 					assert(not path[start + distance].myHoldings.has(hero), hero.HeroId)
 					assert(is_instance_valid(hero.finish_marker), hero.HeroId)
-					assert(hero.finish_marker.position == hero.LobbyPosition, hero.HeroId)
+					assert(hero.finish_marker.position.distance_to(hero.LobbyPosition) < 90.0, hero.HeroId)
+					assert(is_zero_approx(hero.finish_marker.global_rotation), hero.HeroId)
 					assert(not hero.CanMoveWithDice(6, path.size()), hero.HeroId)
 				else:
 					assert(hero.CurrentWayPoint == path[start + distance], hero.HeroId)
