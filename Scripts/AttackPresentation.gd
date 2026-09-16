@@ -1,16 +1,28 @@
 extends CanvasLayer
 
 const SLASHES = preload("res://Arts/Textures_Game/Effects/AttackSlashes.tres")
+const BATTLE_BACKGROUNDS := {
+	"Nerathis": preload("res://Arts/Textures_Game/Board/NerathisBattle.png"),
+	"Astherion": preload("res://Arts/Textures_Game/Board/AstherionBattle.png"),
+	"Thornvale": preload("res://Arts/Textures_Game/Board/ThornvaleBattle.png"),
+	"Nekravia": preload("res://Arts/Textures_Game/Board/NekraviaBattle.png"),
+}
 var pending: Array[Dictionary] = []
 var stage: Control
 
-func queue_attack(attacker: Piece, defender: Piece, damage: int = -1) -> void:
+func queue_attack(attacker: Piece, defender: Piece, damage: int = -1, battle_cell: WayPoint = null) -> void:
 	if damage < 0:
 		damage = defender.GetIncomingDamage(attacker.Attack)
+	if battle_cell == null:
+		battle_cell = defender.CurrentWayPoint
+	var territory := ""
+	if battle_cell != null and attacker.wayPointManager != null:
+		territory = attacker.wayPointManager.GetTerritoryFaction(battle_cell)
 	pending.append({
 		"attacker": attacker.PieceSprite.texture,
 		"defender": defender.PieceSprite.texture,
 		"faction": attacker.Faction,
+		"territory": territory,
 		"damage": mini(damage, defender.Health),
 	})
 
@@ -41,11 +53,22 @@ func _play(attack: Dictionary) -> void:
 	stage.modulate.a = 0.0
 	add_child(stage)
 	_process(0.0)
-	var white := ColorRect.new()
-	white.color = Color(1, 1, 1, 0.5)
-	white.size = stage.size
-	white.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(white)
+	var background_texture: Texture2D = BATTLE_BACKGROUNDS.get(attack.get("territory", ""))
+	if background_texture != null:
+		var background := TextureRect.new()
+		background.name = "BattleBackground"
+		background.texture = background_texture
+		background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		background.size = stage.size
+		background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stage.add_child(background)
+	else:
+		var white := ColorRect.new()
+		white.color = Color(1, 1, 1, 0.5)
+		white.size = stage.size
+		white.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stage.add_child(white)
 	var attacker := _hero(attack.attacker, Vector2(250, 520))
 	var defender := _hero(attack.defender, Vector2(750, 520))
 	var slash := AnimatedSprite2D.new()

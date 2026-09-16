@@ -27,7 +27,8 @@ func SetPiece(piece: Piece) -> void:
 	var captured_piece := _find_capturable_opponent(piece)
 	var direct := captured_piece != null and myHoldings.has(captured_piece)
 	if captured_piece != null and piece.Attack > 0 and boardManager != null:
-		boardManager.attack_presentation.queue_attack(piece, captured_piece, captured_piece.GetIncomingDamage(piece.Attack, direct))
+		var battle_cell: WayPoint = self if direct else captured_piece.CurrentWayPoint
+		boardManager.attack_presentation.queue_attack(piece, captured_piece, captured_piece.GetIncomingDamage(piece.Attack, direct), battle_cell)
 	if captured_piece != null and captured_piece.TakeDamage(piece.Attack, direct):
 		piece.RecordKill()
 		if captured_piece.CurrentWayPoint != null:

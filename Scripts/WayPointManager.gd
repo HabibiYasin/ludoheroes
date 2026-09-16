@@ -7,6 +7,13 @@ extends Node2D
 @export var blue_path: Array[WayPoint]
 @export var red_path: Array[WayPoint]
 
+func GetTerritoryFaction(cell: WayPoint) -> String:
+	# Use board-local coordinates so territories rotate together with their bases.
+	var point := to_local(cell.global_position)
+	if absf(point.x) > absf(point.y):
+		return "Astherion" if point.x > 0.0 else "Nekravia"
+	return "Thornvale" if point.y > 0.0 else "Nerathis"
+
 func GetPath(player_color: GameManager.PlayerColor) -> Array[WayPoint]:
 	match player_color:
 		GameManager.PlayerColor.Green:
