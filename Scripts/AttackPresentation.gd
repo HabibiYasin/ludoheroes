@@ -95,6 +95,7 @@ func _play(attack: Dictionary) -> void:
 	var frame_size := SLASHES.get_frame_texture(animation, 0).get_size()
 	slash.scale = Vector2.ONE * (440.0 / maxf(frame_size.x, frame_size.y))
 	slash.play(animation)
+	GameAudio.play_attack()
 	damage.modulate.a = 1.0
 	var shake := create_tween()
 	for offset in [18.0, -16.0, 12.0, -9.0, 5.0, 0.0]:

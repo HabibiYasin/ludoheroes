@@ -9,11 +9,12 @@ var _home: VBoxContainer
 var _settings: VBoxContainer
 var _color_selection: VBoxContainer
 var _start: Button
-var _volume: HSlider
+var _audio_settings: VBoxContainer
 var _fullscreen: CheckButton
 var _config := ConfigFile.new()
 
 func _ready() -> void:
+	GameAudio.play_main_music()
 	_config.load(SETTINGS_PATH)
 	var background := preload("res://Scripts/FantasyMenuBackground.gd").new()
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -88,16 +89,8 @@ func _ready() -> void:
 	_settings.hide()
 	content.add_child(_settings)
 	_settings.add_child(_label("SETTINGS", 20, Color.WHITE))
-	_settings.add_child(_label("Volume suara", 16, Color("aab8d0")))
-	_volume = HSlider.new()
-	_volume.custom_minimum_size.y = 64
-	_volume.min_value = 0
-	_volume.max_value = 100
-	_volume.step = 1
-	_volume.value = clampf(float(_config.get_value("audio", "volume", 80)), 0, 100)
-	_settings.add_child(_volume)
-	_apply_volume(_volume.value)
-	_volume.value_changed.connect(_apply_volume)
+	_audio_settings = preload("res://Scripts/AudioSettings.gd").new()
+	_settings.add_child(_audio_settings)
 	_fullscreen = CheckButton.new()
 	_fullscreen.text = "Layar penuh"
 	_fullscreen.add_theme_font_size_override("font_size", 28)
@@ -184,7 +177,7 @@ func _button(value: String, action: Callable, primary: bool = false) -> Button:
 func _show_settings() -> void:
 	_home.hide()
 	_settings.show()
-	_volume.grab_focus()
+	_audio_settings.controls["Music"].mute.grab_focus()
 
 func _show_color_selection() -> void:
 	_home.hide()
@@ -206,17 +199,14 @@ func _show_home() -> void:
 	_home.show()
 	_start.grab_focus()
 
-func _apply_volume(value: float) -> void:
-	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value / 100.0, 0.0001)))
-	AudioServer.set_bus_mute(0, value == 0)
-	_config.set_value("audio", "volume", value)
-
 func _apply_fullscreen(enabled: bool) -> void:
 	if DisplayServer.get_name() != "headless" and OS.get_name() != "Android":
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if enabled else DisplayServer.WINDOW_MODE_WINDOWED)
 	_config.set_value("display", "fullscreen", enabled)
 
 func _save_settings() -> void:
+	_config.load(SETTINGS_PATH)
+	_config.set_value("display", "fullscreen", _fullscreen.button_pressed)
 	var error := _config.save(SETTINGS_PATH)
 	if error != OK:
 		push_warning("Pengaturan tidak dapat disimpan: %s" % error_string(error))

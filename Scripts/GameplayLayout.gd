@@ -9,6 +9,7 @@ const BASE_ORIGINS := {
 var base_artworks: Array[Sprite2D] = []
 
 func _ready() -> void:
+	GameAudio.play_main_music()
 	# Keep legacy Places hidden; static base art and turn effects are independent.
 	for color_name in ["Green", "Yellow", "Blue", "Red"]:
 		var place := get_node_or_null("CoreGamplay/Board/board_GamePlay/Sprite2D_Board/Sprite2D_" + color_name)

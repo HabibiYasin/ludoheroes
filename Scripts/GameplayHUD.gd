@@ -17,8 +17,6 @@ var settings_panel: Panel
 var reactions: Panel
 var emote: Label
 var emote_timer: Timer
-var config := ConfigFile.new()
-var settings_dirty := false
 var idle_controller: Node
 var idle_countdown: Label
 var idle_warning: Label
@@ -206,25 +204,14 @@ func _build_menu() -> void:
 	settings_panel = _panel(root, Rect2(650, 280, 620, 520))
 	settings_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_label(settings_panel, "SETTINGS", Rect2(20, 30, 580, 60), 40, GOLD)
-	_label(settings_panel, "Volume suara", Rect2(40, 130, 540, 50), 30)
-	config.load("user://settings.cfg")
-	var volume := HSlider.new()
-	volume.position = Vector2(60, 215)
-	volume.size = Vector2(500, 70)
-	volume.max_value = 100
-	volume.value = float(config.get_value("audio", "volume", 80))
-	settings_panel.add_child(volume)
-	volume.value_changed.connect(_volume_changed)
-	_button(settings_panel, "Kembali", Rect2(60, 345, 500, 80), func(): settings_panel.hide(); menu_panel.show())
+	var audio_settings := preload("res://Scripts/AudioSettings.gd").new()
+	audio_settings.position = Vector2(60, 108)
+	audio_settings.size = Vector2(500, 240)
+	settings_panel.add_child(audio_settings)
+	_button(settings_panel, "Kembali", Rect2(60, 398, 500, 80), func(): settings_panel.hide(); menu_panel.show())
 	modal.hide()
 	menu_panel.hide()
 	settings_panel.hide()
-
-func _volume_changed(value: float) -> void:
-	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(value / 100.0, 0.0001)))
-	AudioServer.set_bus_mute(0, value == 0)
-	config.set_value("audio", "volume", value)
-	settings_dirty = true
 
 func _open_menu() -> void:
 	chat_panel.hide()
@@ -235,12 +222,6 @@ func _open_menu() -> void:
 
 func _close_menu() -> void:
 	skill_panel.hide()
-	if settings_dirty:
-		var error := config.save("user://settings.cfg")
-		if error != OK:
-			push_warning("Pengaturan tidak dapat disimpan: %s" % error_string(error))
-		else:
-			settings_dirty = false
 	modal.hide()
 	menu_panel.hide()
 	settings_panel.hide()
@@ -398,7 +379,7 @@ func _refresh_recommendations() -> void:
 			var piece: Piece = candidates[i].piece
 			recommendations.append(piece)
 			icon.texture = piece.PieceTexture
-			icon.get_parent().get_child(1).tooltip_text = "Rekomendasi: " + piece.HeroId
+			icon.get_parent().get_child(1).tooltip_text = "Jalankan " + piece.HeroId
 
 func _inspect_recommendation(index: int) -> void:
 	if board.item_choice.stage != null:
@@ -406,8 +387,25 @@ func _inspect_recommendation(index: int) -> void:
 			board.item_choice._select(sidebar_items[index], true)
 			_refresh_item_shortcuts()
 		return
-	if index < recommendations.size():
-		_inspect_hero(recommendations[index])
+	if get_tree().paused or not board.IsHumanTurn() or GameManager.GameCurrentState != GameManager.GameStateEnum.PlayerSelectPiece:
+		return
+	if index < 0 or index >= recommendations.size():
+		return
+	var piece := recommendations[index]
+	var group := board.piecesManager.GetPieceGroupBasedOnType(board.currentPlayerColor)
+	var path_count := board.GetPathCount(board.currentPlayerColor)
+	# Prefer the selected die, but recommendations may require the other die.
+	if not group.GetMovablePieces(board.currentDiceValue, path_count).has(piece):
+		var legal_die := -1
+		for i in range(board.remainingDice.size()):
+			if board.remainingDice[i] > 0 and group.GetMovablePieces(board.remainingDice[i], path_count).has(piece):
+				legal_die = i
+				break
+		if legal_die < 0:
+			return
+		board.SelectDie(legal_die)
+	piece.ManualInput()
+	_refresh_recommendations()
 
 func _refresh_item_shortcuts() -> void:
 	var choice = board.item_choice

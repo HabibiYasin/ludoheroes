@@ -30,6 +30,7 @@ func _ready() -> void:
 	banner = _picture(root, null, Rect2(240, 260, 1440, 560))
 	hint = _label(root, "Klik untuk melihat penilaian", Rect2(460, 900, 1000, 56), 30, Color.WHITE)
 	sound = AudioStreamPlayer.new()
+	sound.bus = "Music"
 	add_child(sound)
 	visible = false
 	GameManager.OnGameCurrentStateChange.connect(_on_state_changed)
@@ -53,7 +54,8 @@ func _on_state_changed(state: GameManager.GameStateEnum) -> void:
 	is_victory = results[0].color == int(GameManager.LocalPlayerColor)
 	backdrop.color = Color(0.04, 0.42, 0.16, 0.68) if is_victory else Color(0.65, 0.06, 0.04, 0.68)
 	banner.texture = load(ASSET_PATH + ("Victory.png" if is_victory else "Defeated.png"))
-	sound.stream = load(ASSET_PATH + ("You Win.mp3" if is_victory else "Defeated.mp3"))
+	GameAudio.stop_for_results()
+	sound.stream = load("res://Sounds/Music/" + ("Victory.mp3" if is_victory else "Defeated.mp3"))
 	visible = true
 	sound.play()
 

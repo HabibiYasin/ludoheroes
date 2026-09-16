@@ -51,6 +51,7 @@ func RollDice() -> void:
 		return
 
 	_is_rolling = true
+	GameAudio.play_dice_roll()
 	Maindice.modulate = Color.WHITE
 	SecondDice.modulate = Color.WHITE
 	OnDiceRollBegin.emit()

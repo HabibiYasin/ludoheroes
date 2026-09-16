@@ -240,11 +240,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	var local_mouse_position := PieceSprite.get_local_mouse_position()
 	if PieceSprite.is_pixel_opaque(local_mouse_position):
-		GameManager.HeroInspected.emit(self)
-		var board: BoardManager = get_tree().get_first_node_in_group("BoardManager")
-		if board != null and board.IsHumanTurn() and GameManager.GameCurrentState == GameManager.GameStateEnum.PlayerSelectPiece:
-			board._on_player_select_piece(self, true)
+		ManualInput()
 		get_viewport().set_input_as_handled()
+
+func ManualInput() -> void:
+	if get_tree().paused or IsInHome or not is_visible_in_tree():
+		return
+	GameManager.HeroInspected.emit(self)
+	var board: BoardManager = get_tree().get_first_node_in_group("BoardManager")
+	if board != null and board.IsHumanTurn() and GameManager.GameCurrentState == GameManager.GameStateEnum.PlayerSelectPiece:
+		board._on_player_select_piece(self, true)
 
 func AIInput() -> void:
 	if IsInHome:
