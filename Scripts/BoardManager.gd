@@ -173,7 +173,8 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 		StopPieceAnimation()
 		if animation_PlayerForPlaces != null:
 			animation_PlayerForPlaces.stop()
-		print("GAME OVER - winner: ", winner.name)
+		var results := piecesManager.GetMatchResults()
+		print("GAME OVER - highest score: ", results[0].score, ", player color: ", results[0].color)
 		return
 
 	# Each player gets exactly one pair of dice per turn.

@@ -20,6 +20,32 @@ func GetWinner() -> PlayerPiecesGroup:
 			return group
 	return null
 
+# Score ties use goals, then the fixed player-color order. MVP ties keep roster order.
+func GetMatchResults() -> Array[Dictionary]:
+	var results: Array[Dictionary] = []
+	for color in range(4):
+		var group := GetPieceGroupBasedOnType(color)
+		var score := 0
+		var goals := 0
+		var mvp: Piece = null
+		for hero: Piece in group.Pieces:
+			score += hero.MatchScore
+			goals += 1 if hero.IsInHome else 0
+			if mvp == null or hero.MatchScore > mvp.MatchScore:
+				mvp = hero
+		results.append({"color": color, "score": score, "goals": goals, "mvp": mvp})
+	results.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a.score != b.score:
+			return a.score > b.score
+		if a.goals != b.goals:
+			return a.goals > b.goals
+		return a.color < b.color
+	)
+	for index in range(results.size()):
+		results[index]["rank"] = index + 1
+		results[index]["mmr"] = [100, 50, 25, -50][index]
+	return results
+
 func GetPieceGroupBasedOnType(playerColor: GameManager.PlayerColor) -> PlayerPiecesGroup:
 	match playerColor:
 		GameManager.PlayerColor.Green:

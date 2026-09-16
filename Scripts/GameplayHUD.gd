@@ -27,6 +27,7 @@ var item_icons: Array[TextureRect] = []
 var item_counts: Array[Label] = []
 var hero_move: Label
 var hero_skill_damage: Label
+var match_results: CanvasLayer
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -105,6 +106,9 @@ func _ready() -> void:
 	GameManager.HeroInspected.connect(_inspect_hero)
 	get_viewport().size_changed.connect(_resize)
 	_resize()
+	match_results = preload("res://Scripts/MatchResults.gd").new()
+	match_results.board = board
+	add_child(match_results)
 
 func _refresh_round(value: int) -> void:
 	round_label.text = "RONDE %d" % value

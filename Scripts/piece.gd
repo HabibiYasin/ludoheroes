@@ -17,6 +17,21 @@ var Attack: int = 0
 var Items: Dictionary = {}
 var MoveBonus: int = 0
 var SkillDamage: int = 0
+var MatchScore: int = 0
+var MatchKills: int = 0
+var GoalScored: bool = false
+
+func RecordKill() -> void:
+	MatchKills += 1
+	MatchScore += 10
+	StatsChanged.emit()
+
+func RecordGoal() -> void:
+	if GoalScored:
+		return
+	GoalScored = true
+	MatchScore += 100
+	StatsChanged.emit()
 
 func EquipItem(id: int) -> bool:
 	if id < 0 or id >= 6 or (Items.size() >= 2 and not Items.has(id)):
@@ -47,6 +62,9 @@ var MagicalDefense: int = 0:
 		StatsChanged.emit()
 
 func InitializeStats() -> void:
+	MatchScore = 0
+	MatchKills = 0
+	GoalScored = false
 	Items.clear()
 	MoveBonus = 0
 	SkillDamage = 0

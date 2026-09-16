@@ -29,6 +29,7 @@ func SetPiece(piece: Piece) -> void:
 	if captured_piece != null and piece.Attack > 0 and boardManager != null:
 		boardManager.attack_presentation.queue_attack(piece, captured_piece, captured_piece.GetIncomingDamage(piece.Attack, direct))
 	if captured_piece != null and captured_piece.TakeDamage(piece.Attack, direct):
+		piece.RecordKill()
 		if captured_piece.CurrentWayPoint != null:
 			captured_piece.CurrentWayPoint.RemoveMyRef(captured_piece)
 		else:
@@ -40,6 +41,7 @@ func SetPiece(piece: Piece) -> void:
 
 	if IsThisHomePlace:
 		piece.IsInHome = true
+		piece.RecordGoal()
 	_update_shared_layout()
 
 func _update_shared_layout() -> void:
