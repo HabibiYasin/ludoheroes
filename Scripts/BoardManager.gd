@@ -18,6 +18,7 @@ var attack_presentation: CanvasLayer
 var item_choice: CanvasLayer
 var move_preview: Node2D
 signal ItemHeroInspected(hero: Piece)
+signal HeroMoveStarted(hero: Piece)
 var currentRound: int = 1
 var _round_finished_players: Array[int] = []
 
@@ -111,6 +112,7 @@ func _complete_die() -> void:
 	_prepare_next_die()
 
 func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -> void:
+	HeroMoveStarted.emit(moveThisPiece)
 	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.Null)
 	hasKill = false
 

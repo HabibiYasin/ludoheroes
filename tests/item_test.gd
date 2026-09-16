@@ -35,6 +35,7 @@ func _run() -> void:
 	board.BotsEnabled = false
 	game.get_node("CoreGamplay/PlayerIdleController").Enabled = false
 	add_child(game)
+	var hud = game.get_child(game.get_child_count() - 1)
 	var hero: Piece = board.piecesManager.GreenPieces.Pieces[0]
 	var stars: Array[int] = []
 	for color in range(4):
@@ -50,8 +51,24 @@ func _run() -> void:
 		await get_tree().process_frame
 	assert(board.remainingDice == [6, 4])
 	var spawn_choice: int = board.item_choice.offered[0]
-	await board.item_choice._select(spawn_choice, true)
+	hud._refresh_recommendations()
+	assert(hud.sidebar_items == board.item_choice.offered)
+	assert(hud.recommendation_icons[0].texture == Catalog.texture(spawn_choice))
+	assert(hud.recommendation_buttons[0].disabled)
+	while board.item_choice.entering:
+		await get_tree().process_frame
+	hud._refresh_recommendations()
+	assert(not hud.recommendation_buttons[0].disabled)
+	_click(hud.recommendation_buttons[0])
+	assert(board.item_choice.offered.is_empty())
+	# Repeated taps cannot award the second item or inspect a hero.
+	hud._inspect_recommendation(1)
+	while board.item_choice.stage != null:
+		await get_tree().process_frame
 	assert(hero.Items.get(spawn_choice) == 1 and board.remainingDice == [0, 4])
+	assert(hero.Items.size() == 1)
+	hud._refresh_recommendations()
+	assert(hud.sidebar_items.is_empty() and hud.choice_labels[0].text.is_empty())
 	hero.MoveBonus = 0
 	# Award checks include every enemy spawn, regardless of the hero's color.
 	board.BotsEnabled = true
@@ -74,8 +91,14 @@ func _run() -> void:
 		await get_tree().process_frame
 	assert(GameManager.GameCurrentState == GameManager.GameStateEnum.Null)
 	assert(board.remainingDice == [1, 4])
-	var chosen: int = board.item_choice.offered[0]
-	await board.item_choice._select(chosen, true)
+	var chosen: int = board.item_choice.offered[1]
+	while board.item_choice.entering:
+		await get_tree().process_frame
+	hud._refresh_recommendations()
+	_click(hud.recommendation_buttons[1])
+	assert(board.item_choice.offered.is_empty())
+	while board.item_choice.stage != null:
+		await get_tree().process_frame
 	assert(hero.Items.has(chosen) and board.remainingDice == [0, 4])
 	hero.Items.clear()
 	# A second award can stack the same type without using another slot.
@@ -103,6 +126,10 @@ func _run() -> void:
 	var seconds: float = board.item_choice.remaining
 	await get_tree().process_frame
 	assert(board.item_choice.remaining == seconds)
+	hud._refresh_recommendations()
+	assert(hud.recommendation_buttons[0].disabled)
+	hud._inspect_recommendation(0)
+	assert(board.item_choice.offered.size() == 2)
 	get_tree().paused = false
 	while board.item_choice.entering:
 		await get_tree().process_frame
@@ -113,6 +140,8 @@ func _run() -> void:
 	while board.item_choice.stage != null:
 		await get_tree().process_frame
 	assert(other.Items.size() == 1 and board.item_choice.stage == null)
+	hud._refresh_recommendations()
+	assert(hud.sidebar_items.is_empty())
 	var bot: Piece = board.piecesManager.RedPieces.Pieces[0]
 	bot.SetCurrentPositionAndCheckKill(board.way_points.red_path.find(hero.CurrentWayPoint))
 	board.BotsEnabled = true
@@ -134,3 +163,12 @@ func _run() -> void:
 	await get_tree().process_frame
 	print("PASS: six item stats, unique offers, two type cap, stacks, eight reward tiles, own/enemy spawn rewards, summon reward, manual/timeout/bot awards, pause, die continuation and move bonus")
 	get_tree().quit()
+
+func _click(button: Button) -> void:
+	var point := button.get_global_transform_with_canvas() * (button.size * 0.5)
+	for pressed in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.position = point
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = pressed
+		get_viewport().push_input(event, true)

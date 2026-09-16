@@ -62,17 +62,21 @@ func _update_layout() -> void:
 				piece.UpdateFinishMarkerPosition()
 	var dice: Node2D = $CoreGamplay/Dice/DiceRoot
 	dice.global_rotation = 0.0
-	dice.global_position = origin + Vector2(230, 872) * fit
+	dice.global_position = origin + Vector2(230, 850) * fit
 	dice.global_scale = Vector2.ONE * 0.72 * fit
 	var status: Label = dice.get_node("StatusLabel")
-	status.add_theme_font_size_override("font_size", 30)
+	status.add_theme_font_size_override("font_size", 24)
+	status.add_theme_color_override("font_color", Color("17243c"))
+	status.add_theme_color_override("font_shadow_color", Color("ffffff"))
+	status.add_theme_constant_override("shadow_offset_x", 1)
+	status.add_theme_constant_override("shadow_offset_y", 1)
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.clip_text = true
 	status.max_lines_visible = 2
 	status.custom_minimum_size = Vector2.ZERO
-	status.position = Vector2(-260, 125)
-	status.size = Vector2(520, 100)
+	status.position = Vector2(-260, 110)
+	status.size = Vector2(520, 70)
 	var background: Sprite2D = $BackGround2DSprite
 	var texture_size := background.texture.get_size()
 	background.position = viewport_size * 0.5
