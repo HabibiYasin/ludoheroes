@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dyn6nw5ocymys"
-path="res://.godot/imported/background.jpg-6c78794cc82088e8f5856567691fc970.ctex"
+uid="uid://cydaauury2q1v"
+path="res://.godot/imported/Knowledge.png-be3fa4860aa01e4a82bc02a5603483ed.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Arts/Textures_Game/Background/background.jpg"
-dest_files=["res://.godot/imported/background.jpg-6c78794cc82088e8f5856567691fc970.ctex"]
+source_file="res://Arts/Textures_Game/Icons/Knowledge.png"
+dest_files=["res://.godot/imported/Knowledge.png-be3fa4860aa01e4a82bc02a5603483ed.ctex"]
 
 [params]
 

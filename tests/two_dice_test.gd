@@ -24,7 +24,7 @@ func _ready() -> void:
 			assert(board.currentRound == initial_round)
 			board._on_dice_root_on_dice_rolled([2, 3])
 		assert(board.currentRound == initial_round + 1)
-		assert(hud.round_label.text == "RONDE %d" % board.currentRound)
+		assert(hud.round_label.text == hud._round_block(board.currentRound))
 	board.currentPlayerTurnIndex = initial_player - 1
 	board.UpdatePlayerTurn()
 	var round_before_moves := board.currentRound

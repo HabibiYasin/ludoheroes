@@ -49,6 +49,9 @@ func _resize() -> void:
 func _on_state_changed(state: GameManager.GameStateEnum) -> void:
 	if state != GameManager.GameStateEnum.GameOver or presented:
 		return
+	# A battle kill is not a match win: a player must finish their roster first.
+	if board.piecesManager.GetWinner() == null:
+		return
 	presented = true
 	results = board.piecesManager.GetMatchResults()
 	is_victory = results[0].color == int(GameManager.LocalPlayerColor)

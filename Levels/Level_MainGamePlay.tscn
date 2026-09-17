@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://bs72hdhyevken"]
 
 [ext_resource type="PackedScene" uid="uid://cmnljkkjubyya" path="res://Scenes/Roots/Core_Gamplay_Root.tscn" id="1_hpn5y"]
-[ext_resource type="Texture2D" uid="uid://d2a7wvwftuaql" path="res://Arts/Textures_Game/Background/background.jpg" id="2_ldk7m"]
+[ext_resource type="Texture2D" path="res://Arts/Textures_Game/Background/background.png" id="2_ldk7m"]
 
 [ext_resource type="Script" path="res://Scripts/GameplayLayout.gd" id="3_layout"]
 
@@ -15,6 +15,6 @@ z_index = 1
 enabled = false
 
 [node name="BackGround2DSprite" type="Sprite2D" parent="."]
-position = Vector2(23, -55)
-scale = Vector2(1.46929, 1.46929)
+position = Vector2(960, 540)
+scale = Vector2(0.48, 0.48)
 texture = ExtResource("2_ldk7m")

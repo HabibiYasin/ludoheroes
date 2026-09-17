@@ -15,8 +15,8 @@ func _run() -> void:
 	for hero: Piece in board.piecesManager.GetPieceGroupBasedOnType(board.currentPlayerColor).Pieces:
 		hero.EquipItem(0)
 		hero.EquipItem(1)
-	# Both hero buttons must summon, including switching from an unusable die.
-	for index in range(2):
+	# All four fixed hero buttons summon, including switching from an unusable die.
+	for index in range(4):
 		board._on_dice_root_on_dice_rolled([1, 6])
 		board.SelectDie(0)
 		hud._refresh_recommendations()
@@ -46,7 +46,7 @@ func _run() -> void:
 		# Restore the local turn for the next independent button scenario.
 		board.currentPlayerColor = GameManager.LocalPlayerColor
 		board.currentPlayerTurnIndex = int(GameManager.LocalPlayerColor)
-	print("PASS: both hero shortcuts summon/move, select a legal die, reset autoplay and respect pause")
+	print("PASS: all four hero shortcuts summon/move, select a legal die, reset autoplay and respect pause")
 	get_tree().quit()
 
 func _click(button: Button) -> void:

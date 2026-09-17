@@ -19,6 +19,11 @@ func _check_match(local_wins: bool) -> void:
 	var hud = game.get_child(game.get_child_count() - 1)
 	var overlay = hud.match_results
 	assert(not overlay.visible)
+	# A premature game-over notification must not start result music.
+	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.GameOver)
+	assert(not overlay.presented and not overlay.sound.playing)
+	assert(GameAudio.music.playing)
+	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.PlayerCanRollDice)
 	var scoring_color := GameManager.PlayerColor.Green if local_wins else GameManager.PlayerColor.Red
 	var finishing_color := GameManager.PlayerColor.Red if local_wins else GameManager.PlayerColor.Green
 	var scoring_group := board.piecesManager.GetPieceGroupBasedOnType(scoring_color)

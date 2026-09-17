@@ -35,7 +35,8 @@ func _process(_delta: float) -> void:
 		var viewport_size := get_viewport().get_visible_rect().size
 		var fit := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
 		stage.scale = Vector2.ONE * fit
-		stage.position = (viewport_size - Vector2(1920, 1080) * fit) * 0.5 + Vector2(460, 40) * fit
+		stage.position = (viewport_size - Vector2(1920, 1080) * fit) * 0.5 + Vector2(470, 90) * fit
+		stage.scale *= 0.98
 
 func _hero(texture: Texture2D, center: Vector2) -> Sprite2D:
 	var sprite := Sprite2D.new()

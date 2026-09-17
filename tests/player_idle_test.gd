@@ -6,6 +6,10 @@ func _ready() -> void:
 	game.get_node("CoreGamplay/BotController").set_process(false)
 	add_child(game)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
+	# Item selection has its own timeout coverage; keep this test about idle turns.
+	for hero: Piece in board.piecesManager.GreenPieces.Pieces:
+		hero.EquipItem(0)
+		hero.EquipItem(1)
 	var dice: Dice = game.get_node("CoreGamplay/Dice/DiceRoot")
 	dice.IsTestRun = true
 	var idle = game.get_node("CoreGamplay/PlayerIdleController")

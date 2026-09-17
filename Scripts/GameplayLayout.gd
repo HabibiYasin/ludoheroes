@@ -42,8 +42,8 @@ func _update_layout() -> void:
 	var fit := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
 	var origin := (viewport_size - Vector2(1920, 1080) * fit) * 0.5
 	var board_sprite: Sprite2D = $CoreGamplay/Board/board_GamePlay/Sprite2D_Board
-	$CoreGamplay.scale = Vector2.ONE * (1000.0 / 1804.0) * fit
-	$CoreGamplay.position = origin + Vector2(960, 540) * fit
+	$CoreGamplay.scale = Vector2.ONE * (980.0 / 1804.0) * fit
+	$CoreGamplay.position = origin + Vector2(960, 580) * fit
 	$CoreGamplay.rotation = -float(GameManager.LocalPlayerColor) * PI * 0.5
 	# Fit the square artwork to the board's existing coordinate space.
 	var artwork: Sprite2D = board_sprite.get_node("Artwork")
@@ -63,12 +63,12 @@ func _update_layout() -> void:
 				piece.UpdateFinishMarkerPosition()
 	var dice: Node2D = $CoreGamplay/Dice/DiceRoot
 	dice.global_rotation = 0.0
-	dice.global_position = origin + Vector2(230, 850) * fit
-	dice.global_scale = Vector2.ONE * 0.72 * fit
+	dice.global_position = origin + Vector2(225, 67) * fit
+	dice.global_scale = Vector2.ONE * 0.62 * fit
 	var status: Label = dice.get_node("StatusLabel")
-	status.add_theme_font_size_override("font_size", 24)
-	status.add_theme_color_override("font_color", Color("17243c"))
-	status.add_theme_color_override("font_shadow_color", Color("ffffff"))
+	status.add_theme_font_size_override("font_size", 23)
+	status.add_theme_color_override("font_color", Color.WHITE)
+	status.add_theme_color_override("font_shadow_color", Color.BLACK)
 	status.add_theme_constant_override("shadow_offset_x", 1)
 	status.add_theme_constant_override("shadow_offset_y", 1)
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -76,8 +76,8 @@ func _update_layout() -> void:
 	status.clip_text = true
 	status.max_lines_visible = 2
 	status.custom_minimum_size = Vector2.ZERO
-	status.position = Vector2(-260, 110)
-	status.size = Vector2(520, 70)
+	status.position = Vector2(-300, 76)
+	status.size = Vector2(600, 45)
 	var background: Sprite2D = $BackGround2DSprite
 	var texture_size := background.texture.get_size()
 	background.position = viewport_size * 0.5

@@ -184,9 +184,6 @@ func SetCurrentPositionAndCheckKill(index: int) -> void:
 	if IsInHome:
 		return
 
-	if IsInLobby() and Health == 0:
-		Health = MaxHealth
-		StatsChanged.emit()
 	CurrentPosition = index
 	CurrentState = GameManager.PieceStateEnum.InWayPoint
 
@@ -204,6 +201,10 @@ func SendBackToLobby() -> void:
 	IsInHome = false
 	position = LobbyPosition
 	SetSharedCellLayout(Vector2.ZERO)
+	# Revive on arrival at base so the HUD reflects the hero's restored health.
+	if Health <= 0:
+		Health = MaxHealth
+		StatsChanged.emit()
 
 func GetCurrentPosition() -> int:
 	return CurrentPosition
