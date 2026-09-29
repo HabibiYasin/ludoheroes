@@ -51,7 +51,7 @@ func GetMovablePieces(dice_value: int, path_count: int) -> Array[Piece]:
 	var result: Array[Piece] = []
 
 	for piece in Pieces:
-		var pair_summon := boardManager != null and boardManager.currentPlayerColor == CurrentPlayerColor and boardManager.CanSummonWithPair() and piece.IsInLobby() and not piece.IsInHome
+		var pair_summon := boardManager != null and boardManager.currentPlayerColor == CurrentPlayerColor and boardManager.CanSummonWithPair() and piece.IsInLobby() and not piece.IsInHome and piece.CanSummonWithStatuses()
 		if piece.CanMoveWithDice(dice_value, path_count) or pair_summon:
 			result.append(piece)
 

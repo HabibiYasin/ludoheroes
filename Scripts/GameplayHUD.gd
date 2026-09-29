@@ -22,6 +22,7 @@ var item_icons: Array[TextureRect] = []
 var item_counts: Array[Label] = []
 var hero_move: Label
 var hero_skill_damage: Label
+var hero_status_strip: Control
 var match_results: CanvasLayer
 
 var board: BoardManager
@@ -75,6 +76,10 @@ func _ready() -> void:
 	hero_name = _label(hero, "Pilih hero", Rect2(12, 15, 350, 50), 29)
 	hero_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hero_icon = _picture(hero, Rect2(38, 72, 298, 270), null)
+	hero_status_strip = Control.new()
+	hero_status_strip.position = Vector2(17, 302)
+	hero_status_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hero.add_child(hero_status_strip)
 	hero_health = _label(hero, "", Rect2(14, 342, 170, 40), 27)
 	hero_attack = _label(hero, "", Rect2(190, 342, 170, 40), 27)
 	hero_physical_defense = _label(hero, "", Rect2(14, 383, 170, 40), 27)
@@ -199,6 +204,18 @@ func _display_hero(piece: Piece) -> void:
 func _refresh_hero_stats() -> void:
 	if not is_instance_valid(inspected_hero):
 		return
+	for child in hero_status_strip.get_children():
+		child.free()
+	var status_catalog = preload("res://Scripts/HeroStatus.gd")
+	var status_index := 0
+	for id: String in inspected_hero.Status.effects:
+		var entry: Dictionary = inspected_hero.Status.effects[id]
+		var icon := _picture(hero_status_strip, Rect2(status_index * 34, 0, 32, 32), load(status_catalog.ASSET_PATH + status_catalog.DEFINITIONS[id].file))
+		icon.mouse_filter = Control.MOUSE_FILTER_STOP
+		icon.tooltip_text = "%s (%s)" % [id, status_catalog.DEFINITIONS[id].type]
+		if entry.turns > 0:
+			icon.tooltip_text += " - %d giliran" % entry.turns
+		status_index += 1
 	var catalog = preload("res://Scripts/ItemCatalog.gd")
 	var ids := inspected_hero.Items.keys()
 	for i in range(2):

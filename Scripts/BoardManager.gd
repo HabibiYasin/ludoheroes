@@ -59,7 +59,7 @@ func _on_player_select_piece(value: Piece, manual: bool = false) -> void:
 		return
 
 	var path_count := GetPathCount(value.CurrentPlayerColor)
-	var use_pair := value.IsInLobby() and not value.IsInHome and CanSummonWithPair()
+	var use_pair := value.IsInLobby() and not value.IsInHome and value.CanSummonWithStatuses() and CanSummonWithPair()
 	if not use_pair and not value.CanMoveWithDice(currentDiceValue, path_count):
 		push_warning("Illegal Ludo move ignored.")
 		return
@@ -82,6 +82,8 @@ func _on_dice_root_on_dice_roll_begin() -> void:
 	turn_indicator.hide()
 
 func _on_dice_root_on_dice_rolled(values: Array[int]) -> void:
+	for hero: Piece in piecesManager.GetPieceGroupBasedOnType(currentPlayerColor).Pieces:
+		hero.PrepareStatusRoll(values)
 	remainingDice.assign(values)
 	_prepare_next_die()
 
@@ -112,6 +114,9 @@ func _complete_die() -> void:
 	_prepare_next_die()
 
 func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -> void:
+	var pair_allowed := use_pair and CanSummonWithPair() and moveThisPiece.IsInLobby() and moveThisPiece.CanSummonWithStatuses()
+	if not pair_allowed and not moveThisPiece.CanMoveWithDice(dice_value, GetPathCount(moveThisPiece.CurrentPlayerColor)):
+		return
 	HeroMoveStarted.emit(moveThisPiece)
 	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.Null)
 	hasKill = false
@@ -124,10 +129,12 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 	# Summon with a single 6 or both unused dice totaling 6.
 	# It enters the first square; it does not jump six squares.
 	if moveThisPiece.IsInLobby():
+		moveThisPiece.RemoveStatus("Frozen")
 		moveThisPiece.position = way_points.GetPositionOfThisPoint(
 			0,
 			moveThisPiece.CurrentPlayerColor
 		)
+		moveThisPiece.Status.moved_this_turn = true
 		moveThisPiece.SetCurrentPositionAndCheckKill(0)
 		await _wait_for_kill_if_needed()
 		await AwardLandingItem(moveThisPiece)
@@ -136,31 +143,46 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 		_complete_die()
 		return
 
-	var target_position := moveThisPiece.CurrentPosition + moveThisPiece.GetMoveDistance(dice_value)
+	var route := moveThisPiece.GetMovementPath(dice_value)
+	var target_position: int = route.back()
 
 	# Exact roll is required to reach the last/home waypoint.
-	if target_position >= path_count:
+	if target_position < 0 or target_position >= path_count:
 		GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.PlayerSelectPiece)
 		PlayPieceAnimation()
 		return
 
+	moveThisPiece.RemoveStatus("Frozen")
 	if moveThisPiece.CurrentWayPoint != null:
 		moveThisPiece.CurrentWayPoint.RemoveMyRef(moveThisPiece)
 		moveThisPiece.CurrentWayPoint = null
 
-	for step in range(moveThisPiece.CurrentPosition + 1, target_position + 1):
+	var steps_walked := 0
+	var last_step := moveThisPiece.CurrentPosition
+	for route_index in range(route.size()):
+		var step := route[route_index]
+		if step != last_step:
+			steps_walked += 1
+		last_step = step
 		moveThisPiece.position = way_points.GetPositionOfThisPoint(
 			step,
 			moveThisPiece.CurrentPlayerColor
 		)
 		# The destination heals through SetPiece; intermediate tiles heal here.
-		if step < target_position:
+		if route_index < route.size() - 1:
 			way_points.GetWayPoint(step, moveThisPiece.CurrentPlayerColor).HealFriends(moveThisPiece)
 		await get_tree().create_timer(0.12, false).timeout
 
+	if moveThisPiece.ApplyMovementStatuses(steps_walked):
+		_complete_die()
+		return
 	moveThisPiece.SetCurrentPositionAndCheckKill(target_position)
 	await _wait_for_kill_if_needed()
 	await AwardLandingItem(moveThisPiece)
+
+	if moveThisPiece.IsInLobby():
+		_complete_die()
+		return
 
 	# WayPoint marks IsInHome when the final/home waypoint is reached.
 	if moveThisPiece.IsInHome:
@@ -204,6 +226,8 @@ func AwardLandingItem(hero: Piece) -> void:
 	hero.EquipItem(selected)
 
 func FinishTurn() -> void:
+	for hero: Piece in piecesManager.GetPieceGroupBasedOnType(currentPlayerColor).Pieces:
+		hero.EndStatusTurn()
 	TurnFinished.emit(currentPlayerColor)
 	_record_round_turn()
 	remainingDice.clear()
@@ -248,6 +272,8 @@ func UpdatePlayerTurn() -> void:
 
 		var piece_group := piecesManager.GetPieceGroupBasedOnType(currentPlayerColor)
 		if piece_group != null and not piece_group.HasThisPlayerCompleted():
+			for hero: Piece in piece_group.Pieces:
+				hero.BeginStatusTurn()
 			UpdateTurnIndicator()
 			return
 

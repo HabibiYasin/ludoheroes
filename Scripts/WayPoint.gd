@@ -29,7 +29,7 @@ func SetPiece(piece: Piece) -> void:
 	if captured_piece != null and piece.Attack > 0 and boardManager != null:
 		var battle_cell: WayPoint = self if direct else captured_piece.CurrentWayPoint
 		boardManager.attack_presentation.queue_attack(piece, captured_piece, captured_piece.GetIncomingDamage(piece.Attack, direct), battle_cell)
-	if captured_piece != null and captured_piece.TakeDamage(piece.Attack, direct):
+	if captured_piece != null and captured_piece.TakeDamage(piece.Attack, direct, Piece.DamageType.PHYSICAL, piece):
 		piece.RecordKill()
 		if captured_piece.CurrentWayPoint != null:
 			captured_piece.CurrentWayPoint.RemoveMyRef(captured_piece)
@@ -39,6 +39,12 @@ func SetPiece(piece: Piece) -> void:
 			boardManager.DetectKill(captured_piece)
 		else:
 			captured_piece.SendBackToLobby()
+
+	# Retaliation can defeat the attacker even if the defender also died.
+	if piece.Health <= 0:
+		piece.SendBackToLobby()
+		_update_shared_layout()
+		return
 
 	if IsThisHomePlace:
 		piece.IsInHome = true

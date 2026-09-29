@@ -8,6 +8,78 @@ var finish_marker: Node2D
 var _finish_presented := false
 signal StatsChanged
 
+const StatusCatalog = preload("res://Scripts/HeroStatus.gd")
+var Status = StatusCatalog.new()
+
+func ApplyStatus(id: String, turns: int = -1) -> bool:
+	if Health <= 0 or IsInHome or not Status.apply(id, turns):
+		return false
+	StatsChanged.emit()
+	return true
+
+func HasStatus(id: String) -> bool:
+	return Status.count(id) > 0
+
+func RemoveStatus(id: String) -> void:
+	if Status.effects.erase(id):
+		StatsChanged.emit()
+
+func ClearStatuses() -> void:
+	Status.effects.clear()
+	StatsChanged.emit()
+
+func BeginStatusTurn() -> void:
+	Status.moved_this_turn = false
+
+func PrepareStatusRoll(values: Array[int]) -> void:
+	if values.has(4):
+		RemoveStatus("Cursed")
+	if HasStatus("Confused"):
+		Status.confusion_seed = randi()
+	StatsChanged.emit()
+
+func EndStatusTurn() -> void:
+	if Health <= 0 or IsInHome:
+		return
+	if not IsInLobby() and not Status.moved_this_turn and TakeStatusDamage(Status.count("Drown")):
+		SendBackToLobby()
+		return
+	if HasStatus("Cursed"):
+		Status.effects["Cursed"].elapsed += 1
+		if Status.effects["Cursed"].elapsed >= 4:
+			Health = 0
+			SendBackToLobby()
+			return
+	for id: String in Status.effects.keys():
+		if Status.effects[id].turns > 0:
+			Status.effects[id].turns -= 1
+			if Status.effects[id].turns == 0:
+				Status.effects.erase(id)
+	StatsChanged.emit()
+
+# Health loss from statuses bypasses attack defenses and cannot reflect again.
+# The caller handles defeat, just as with TakeDamage.
+func TakeStatusDamage(amount: int) -> bool:
+	if Health <= 0 or amount <= 0:
+		return false
+	Health = maxi(0, Health - amount)
+	StatsChanged.emit()
+	return Health == 0
+
+func ApplyMovementStatuses(distance: int) -> bool:
+	Status.moved_this_turn = distance > 0 or Status.moved_this_turn
+	# A second die gets a new sequence, even when both dice have the same value.
+	Status.confusion_seed = randi()
+	var damage := mini(3, distance / 2) if HasStatus("Bleed") else 0
+	damage += maxi(0, distance - 3) * Status.count("Thorned")
+	if TakeStatusDamage(damage):
+		SendBackToLobby()
+		return true
+	return false
+
+func CanSummonWithStatuses() -> bool:
+	return Health > 0 and not HasStatus("Stun") and (not HasStatus("Frozen") or GetMovementAllowance(6) >= 6)
+
 @export var HeroId: String = ""
 var HeroClass: String = "Unknown"
 var Faction: String = ""
@@ -62,6 +134,7 @@ var MagicalDefense: int = 0:
 		StatsChanged.emit()
 
 func InitializeStats() -> void:
+	ClearStatuses()
 	MatchScore = 0
 	MatchKills = 0
 	GoalScored = false
@@ -87,8 +160,10 @@ func HasClass(class_value: String) -> bool:
 	return false
 
 func GetIncomingDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL) -> int:
+	if HasStatus("Shield"):
+		return 0
 	var defense := MagicalDefense if damage_type == DamageType.MAGICAL else PhysicalDefense
-	return maxi(0, amount - defense - (1 if HasClass("Tank") and not direct else 0))
+	return maxi(0, amount - defense - Status.count("Nature Shield") - (1 if HasClass("Tank") and not direct else 0))
 
 func Heal(amount: int) -> void:
 	if Health <= 0 or amount <= 0 or Health >= MaxHealth:
@@ -97,6 +172,32 @@ func Heal(amount: int) -> void:
 	StatsChanged.emit()
 
 func GetMoveDistance(dice_value: int) -> int:
+	if HasStatus("Confused") and not IsInLobby():
+		var route := GetMovementPath(dice_value)
+		return route.back() - CurrentPosition if not route.is_empty() else 0
+	return GetMovementAllowance(dice_value)
+
+func GetMovementAllowance(dice_value: int) -> int:
+	if HasStatus("Stun") or Health <= 0:
+		return 0
+	var distance := maxi(0, _base_move_distance(dice_value) - Status.count("Slowed"))
+	if HasStatus("Frozen") and distance < 6:
+		return 0
+	return distance
+
+func GetMovementPath(dice_value: int) -> Array[int]:
+	var route: Array[int] = []
+	var distance := GetMovementAllowance(dice_value)
+	var cursor := CurrentPosition
+	var rng := RandomNumberGenerator.new()
+	rng.seed = Status.confusion_seed + dice_value
+	for step in range(distance):
+		var direction := -1 if HasStatus("Confused") and rng.randf() < 0.5 else 1
+		cursor = maxi(0, cursor + direction)
+		route.append(cursor)
+	return route
+
+func _base_move_distance(dice_value: int) -> int:
 	if IsInLobby() or IsInHome:
 		return dice_value
 	var distance := dice_value + MoveBonus
@@ -112,12 +213,17 @@ func GetMoveDistance(dice_value: int) -> int:
 			return dice_value
 	return distance
 
-func TakeDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL) -> bool:
-	amount = GetIncomingDamage(amount, direct, damage_type)
+func TakeDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL, attacker: Piece = null) -> bool:
 	if Health <= 0 or amount <= 0:
 		return false
-	Health = maxi(0, Health - amount)
+	if HasStatus("Shield"):
+		RemoveStatus("Shield")
+		return false
+	var reflected := Status.count("Nature Shield")
+	Health = maxi(0, Health - GetIncomingDamage(amount, direct, damage_type))
 	StatsChanged.emit()
+	if attacker != null and attacker != self and reflected > 0:
+		attacker.TakeStatusDamage(reflected)
 	return Health == 0
 
 # -1 means the piece is still in the lobby/base.
@@ -154,6 +260,9 @@ func _ready() -> void:
 	if PieceSprite != null:
 		_normal_sprite_position = PieceSprite.position
 	wayPointManager = get_tree().get_first_node_in_group("WayPointManagerGroup")
+	var status_visuals := preload("res://Scripts/HeroStatusVisuals.gd").new()
+	status_visuals.name = "StatusVisuals"
+	add_child(status_visuals)
 
 # Offset only the artwork: logical movement stays at the waypoint center.
 # Root scaling remains independent of the sprite's selection animation.
@@ -191,6 +300,7 @@ func SetCurrentPositionAndCheckKill(index: int) -> void:
 		wayPointManager.SetPieceToThisWayPoint(index, self)
 
 func SendBackToLobby() -> void:
+	ClearStatuses()
 	_reset_finish_presentation()
 	if CurrentWayPoint != null:
 		CurrentWayPoint.RemoveMyRef(self)
@@ -216,15 +326,20 @@ func HasThisPlayerUnlockedPiece() -> bool:
 	return CurrentState != GameManager.PieceStateEnum.InLobby
 
 func CanMoveWithDice(dice_value: int, path_count: int) -> bool:
-	if IsInHome:
+	if IsInHome or Health <= 0 or HasStatus("Stun"):
 		return false
 
 	# Standard Ludo rule: a piece can leave the base only with a 6.
 	if IsInLobby():
-		return dice_value == 6
+		return dice_value == 6 and CanSummonWithStatuses()
 
-	var target_position := CurrentPosition + GetMoveDistance(dice_value)
-	return target_position < path_count
+	var route := GetMovementPath(dice_value)
+	if route.is_empty():
+		return false
+	for index in route:
+		if index < 0 or index >= path_count:
+			return false
+	return true
 
 func _unhandled_input(event: InputEvent) -> void:
 	if IsInHome or not is_visible_in_tree():
