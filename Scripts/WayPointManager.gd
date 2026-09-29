@@ -8,11 +8,18 @@ extends Node2D
 @export var red_path: Array[WayPoint]
 
 func GetTerritoryFaction(cell: WayPoint) -> String:
-	# Use board-local coordinates so territories rotate together with their bases.
+	# Each arm is split between its adjacent factions: the home lane and one
+	# outer lane belong to its owner; the other outer lane belongs to its neighbor.
+	# Board-local coordinates keep these territories attached when the board rotates.
 	var point := to_local(cell.global_position)
+	var half_lane := 1804.0 / 15.0 / 2.0
 	if absf(point.x) > absf(point.y):
-		return "Astherion" if point.x > 0.0 else "Nekravia"
-	return "Thornvale" if point.y > 0.0 else "Nerathis"
+		if point.x > 0.0:
+			return "Nerathis" if point.y < -half_lane else "Astherion"
+		return "Thornvale" if point.y > half_lane else "Nekravia"
+	if point.y > 0.0:
+		return "Astherion" if point.x > half_lane else "Thornvale"
+	return "Nekravia" if point.x < -half_lane else "Nerathis"
 
 func GetPath(player_color: GameManager.PlayerColor) -> Array[WayPoint]:
 	match player_color:

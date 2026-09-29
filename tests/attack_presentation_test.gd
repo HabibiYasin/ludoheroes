@@ -6,7 +6,8 @@ func _ready() -> void:
 	add_child(game)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
 	var presentation = board.attack_presentation
-	# All three lanes of each arm retain their territory under every board rotation.
+	# Reference regions span two adjacent arms, with the middle lane owned by
+	# the faction whose territory covers two lanes. Check every board rotation.
 	var core: Node2D = game.get_node("CoreGamplay")
 	var original_rotation := core.rotation
 	for rotation_index in range(4):
@@ -14,22 +15,25 @@ func _ready() -> void:
 		for waypoint: WayPoint in board.way_points.main_path.get_children():
 			var index := int(waypoint.name)
 			var expected := "Thornvale"
-			if index >= 5 and index <= 17:
+			if index >= 11 and index <= 23:
 				expected = "Nekravia"
-			elif index >= 18 and index <= 30:
+			elif index >= 24 and index <= 36:
 				expected = "Nerathis"
-			elif index >= 31 and index <= 43:
+			elif index >= 37 and index <= 49:
 				expected = "Astherion"
 			assert(board.way_points.GetTerritoryFaction(waypoint) == expected)
+		for entry in [["Green", "Thornvale"], ["Yellow", "Nekravia"], ["Blue", "Nerathis"], ["Red", "Astherion"]]:
+			for waypoint: WayPoint in board.way_points.get_node(entry[0]).get_children():
+				assert(board.way_points.GetTerritoryFaction(waypoint) == entry[1])
 	core.rotation = original_rotation
-	print("PASS: every shared cell territory across all board rotations")
+	print("PASS: every shared and home cell territory across all board rotations")
 	var cell := WayPoint.new()
 	add_child(cell)
 	var attacker: Piece = board.piecesManager.GreenPieces.Pieces[0]
 	var defender: Piece = board.piecesManager.RedPieces.Pieces[0]
 	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.Null)
 	# A fixed pair of heroes must show each target territory's artwork.
-	for entry in [["1", "Thornvale"], ["6", "Nekravia"], ["19", "Nerathis"], ["32", "Astherion"]]:
+	for entry in [["1", "Thornvale"], ["6", "Thornvale"], ["14", "Nekravia"], ["19", "Nekravia"], ["27", "Nerathis"], ["32", "Nerathis"], ["40", "Astherion"], ["45", "Astherion"]]:
 		var target_cell: WayPoint = board.way_points.main_path.get_node(entry[0])
 		presentation.queue_attack(attacker, defender, 1, target_cell)
 		var attack: Dictionary = presentation.pending.pop_front()
