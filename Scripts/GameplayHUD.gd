@@ -120,6 +120,9 @@ func _ready() -> void:
 	for color in range(4):
 		for piece: Piece in board.piecesManager.GetPieceGroupBasedOnType(color).Pieces:
 			piece.StatsChanged.connect(_refresh_ranking)
+			piece.StatsChanged.connect(_refresh_recommendations)
+	board.DiceSelectionChanged.connect(func(_values: Array[int], _selected: int): _refresh_recommendations())
+	GameManager.OnGameCurrentStateChange.connect(func(_state: int): _refresh_recommendations())
 	_refresh_ranking()
 	_refresh_recommendations()
 	match_results = preload("res://Scripts/MatchResults.gd").new()
@@ -448,10 +451,11 @@ func _refresh_recommendations() -> void:
 		var hero := recommendations[i]
 		var action := _hero_action(hero)
 		var portrait = hero_portraits[i]
+		portrait.set_action(action)
 		portrait.ring_color = Color("ff414b") if action == "attack" else (Color("27da79") if action == "skill" else GOLD)
 		var blocked := action == "blocked" or hero.IsInHome
 		portrait.shade.color = Color(0, 0, 0, 0.68) if blocked else (Color(1, 0.06, 0.09, 0.40) if hero.Health * 3 <= hero.MaxHealth else Color.TRANSPARENT)
-		var caption := "Kocok dadu" if action == "roll" else ("Serang" if action == "attack" else ("Jalankan" if action == "move" else "Tidak ada langkah"))
+		var caption := "Kocok dadu" if action == "roll" else ("Serang" if action == "attack" else ("Gunakan skill" if action == "skill" else ("Jalankan" if action == "move" else "Tidak ada langkah")))
 		portrait.tooltip_text = "%s - %s" % [hero.HeroId, "Selesai" if hero.IsInHome else caption]
 
 # The preview and click resolve the same die, including pair summons.
@@ -479,9 +483,18 @@ func _hero_action(hero: Piece) -> String:
 	var die_index := _hero_die(hero)
 	if die_index < 0:
 		return "blocked"
-	var target := 0 if hero.IsInLobby() else hero.CurrentPosition + hero.GetMoveDistance(board.remainingDice[die_index])
+	var target := 0
+	if not hero.IsInLobby():
+		var route := hero.GetMovementPath(board.remainingDice[die_index])
+		if route.is_empty():
+			return "blocked"
+		target = route.back()
 	var cell := board.way_points.GetWayPoint(target, hero.CurrentPlayerColor)
-	if cell != null and hero.Attack > 0 and cell._find_capturable_opponent(hero) != null:
+	if cell == null or cell.isThisSafePlace or cell.IsThisHomePlace:
+		return "move"
+	# Use the same landing-cell target search as combat, including class range
+	# and safe targets. Never infer attack range from the hero's starting tile.
+	if hero.Attack > 0 and cell._find_capturable_opponent(hero) != null:
 		return "attack"
 	# Active skills are not implemented yet. Reserve the green ring for their action.
 	return "move"

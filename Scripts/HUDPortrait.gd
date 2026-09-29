@@ -5,6 +5,13 @@ const CIRCLE_SHADER = preload("res://Shaders/hud_circle.gdshader")
 var portrait: TextureRect
 var background: TextureRect
 var shade: ColorRect
+var action_overlay: TextureRect
+const ACTION_TEXTURES := {
+	"attack": preload("res://Arts/Textures_Game/UI/Controller/attack.png"),
+	"skill": preload("res://Arts/Textures_Game/UI/Controller/skills.png"),
+}
+# Keep the action artwork readable while showing the hero underneath.
+const ACTION_OPACITY := 0.8
 var ring_color := Color.WHITE:
 	set(value):
 		if ring_color == value:
@@ -31,10 +38,19 @@ func _ready() -> void:
 	shade.offset_top = 7
 	shade.offset_right = -7
 	shade.offset_bottom = -7
+	action_overlay = _texture(18)
+	action_overlay.name = "ActionOverlay"
+	action_overlay.material = null
+	action_overlay.modulate.a = ACTION_OPACITY
+	action_overlay.hide()
 	mouse_entered.connect(queue_redraw)
 	mouse_exited.connect(queue_redraw)
 	focus_entered.connect(queue_redraw)
 	focus_exited.connect(queue_redraw)
+
+func set_action(action: String) -> void:
+	action_overlay.texture = ACTION_TEXTURES.get(action)
+	action_overlay.visible = action_overlay.texture != null
 
 func _mask() -> ShaderMaterial:
 	var result := ShaderMaterial.new()
