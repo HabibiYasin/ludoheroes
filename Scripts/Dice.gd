@@ -130,6 +130,7 @@ func _on_selection_changed(values: Array[int], selected_index: int) -> void:
 func _update_status(state: GameManager.GameStateEnum) -> void:
 	if StatusLabel == null:
 		return
+	StatusLabel.hide()
 	if _board != null and not _board.IsHumanTurn() and state != GameManager.GameStateEnum.GameOver:
 		var color_name: String = ["Hijau", "Kuning", "Biru", "Merah"][_board.currentPlayerColor]
 		StatusLabel.text = "Bot %s\nsedang bermain..." % color_name

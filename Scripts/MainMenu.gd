@@ -62,6 +62,7 @@ func _ready() -> void:
 	content.add_child(_home)
 	_start = _button("Start", _show_color_selection, true)
 	_home.add_child(_start)
+	_home.add_child(_button("Knowledge", _open_knowledge))
 	_home.add_child(_button("Settings", _show_settings))
 	_home.add_child(_button("Exit", func(): get_tree().quit()))
 	_color_selection = VBoxContainer.new()
@@ -102,6 +103,9 @@ func _ready() -> void:
 	_settings.add_child(_button("Back", _show_home, true))
 	content.add_child(_label("MAIN BERSAMA • 2 DADU PER GILIRAN", 12, Color("8394b2")))
 	_start.grab_focus()
+
+func _open_knowledge() -> void:
+	add_child(preload("res://Scripts/Knowledge.gd").new())
 
 func _faction_button(faction_name: String, color: GameManager.PlayerColor, accent: Color) -> Button:
 	var choice := _button("", _choose_color.bind(color))

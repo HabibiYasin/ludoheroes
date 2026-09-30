@@ -117,10 +117,12 @@ func _ready() -> void:
 	add_child(skill_target_picker)
 	_build_actions()
 	idle_controller = get_parent().get_node("CoreGamplay/PlayerIdleController")
-	idle_countdown = _label(root, "", Rect2(38, 126, 374, 25), 17)
+	idle_countdown = _label(root, "", Rect2(795, 98, 330, 52), 30, GOLD)
+	idle_countdown.add_theme_stylebox_override("normal", _style(INK))
+	idle_countdown.hide()
 	idle_countdown.add_theme_color_override("font_shadow_color", Color.BLACK)
 	idle_countdown.add_theme_constant_override("shadow_offset_y", 2)
-	idle_warning = _label(root, "", Rect2(480, 95, 960, 80), 24, GOLD)
+	idle_warning = _label(root, "", Rect2(480, 160, 960, 80), 24, GOLD)
 	idle_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	idle_warning.add_theme_stylebox_override("normal", _style(INK))
 	idle_warning.hide()
@@ -184,8 +186,8 @@ func _process(_delta: float) -> void:
 		_refresh_storage()
 	if idle_controller == null:
 		return
-	idle_countdown.visible = idle_controller.WaitingForPlayer or idle_controller.AutoPlaying
-	idle_countdown.text = "Auto-play aktif - ketuk hero untuk stop" if idle_controller.AutoPlaying else "Aksi otomatis dalam %d detik" % ceili(idle_controller.SecondsRemaining)
+	idle_countdown.visible = idle_controller.WaitingForPlayer and not idle_controller.AutoPlaying and idle_controller.SecondsRemaining > 0.0 and idle_controller.SecondsRemaining <= 5.0
+	idle_countdown.text = "Aksi otomatis: %d detik" % ceili(idle_controller.SecondsRemaining)
 	idle_warning.text = idle_controller.WarningText()
 	idle_warning.visible = not idle_warning.text.is_empty()
 
@@ -285,12 +287,13 @@ func _build_menu() -> void:
 	modal = ColorRect.new()
 	modal.color = Color(0, 0, 0, 0.72)
 	root.add_child(modal)
-	menu_panel = _panel(root, Rect2(650, 280, 620, 520))
+	menu_panel = _panel(root, Rect2(650, 225, 620, 630))
 	menu_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_label(menu_panel, "MENU", Rect2(20, 30, 580, 60), 40, GOLD)
 	_button(menu_panel, "Lanjutkan", Rect2(60, 125, 500, 80), _close_menu)
 	_button(menu_panel, "Settings", Rect2(60, 235, 500, 80), func(): menu_panel.hide(); settings_panel.show())
-	_button(menu_panel, "Exit", Rect2(60, 345, 500, 80), func(): get_tree().quit())
+	_button(menu_panel, "Kembali ke Menu", Rect2(60, 345, 500, 80), _return_to_main_menu)
+	_button(menu_panel, "Exit Game", Rect2(60, 455, 500, 80), func(): get_tree().quit())
 	settings_panel = _panel(root, Rect2(650, 280, 620, 520))
 	settings_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_label(settings_panel, "SETTINGS", Rect2(20, 30, 580, 60), 40, GOLD)
@@ -298,7 +301,7 @@ func _build_menu() -> void:
 	audio_settings.position = Vector2(60, 108)
 	audio_settings.size = Vector2(500, 240)
 	settings_panel.add_child(audio_settings)
-	_button(settings_panel, "Kembali", Rect2(60, 398, 500, 80), _close_menu)
+	_button(settings_panel, "Kembali", Rect2(60, 398, 500, 80), _open_menu)
 	modal.hide()
 	menu_panel.hide()
 	settings_panel.hide()
@@ -308,6 +311,10 @@ func _open_menu() -> void:
 	modal.show()
 	menu_panel.show()
 	get_tree().paused = true
+
+func _return_to_main_menu() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://Levels/MainMenu.tscn")
 
 func _close_menu() -> void:
 	if storage_panel != null:
@@ -444,7 +451,9 @@ func _build_actions() -> void:
 	var icons := "res://Arts/Textures_Game/Icons/"
 	_circle(root, Rect2(1510, 12, 116, 116), load(icons + "Battle Status.png"), "Battle Status", _open_skill.bind("Battle Status"))
 	_circle(root, Rect2(1641, 12, 116, 116), load(icons + "Knowledge.png"), "Knowledge", _open_skill.bind("Knowledge"))
-	_circle(root, Rect2(1772, 12, 116, 116), load(icons + "Settings.png"), "Pengaturan", _open_settings)
+	var menu_button := _circle(root, Rect2(1772, 12, 116, 116), null, "Menu", _open_menu)
+	_label(menu_button, "☰", Rect2(0, 9, 116, 80), 58)
+	_label(menu_button, "MENU", Rect2(0, 82, 116, 25), 17)
 	_circle(root, Rect2(1513, 523, 135, 135), load(icons + "Items.png"), "Storage", _open_storage)
 	_circle(root, Rect2(1748, 523, 135, 135), load(icons + "Emote and Chat.png"), "Chat & Emoji", _open_skill.bind("Chat & Emoji"))
 
@@ -625,13 +634,14 @@ func _build_skill_popup() -> void:
 
 func _open_skill(title: String) -> void:
 	_close_menu()
+	if title == "Knowledge":
+		add_child(preload("res://Scripts/Knowledge.gd").new())
+		return
 	modal.show()
 	skill_title.text = title
 	match title:
 		"Domain Authority":
 			skill_description.text = "Coming soon\nSkill faksi dengan kondisi khusus. Efek hanya berlaku di wilayah faksinya."
-		"Knowledge":
-			skill_description.text = "Coming soon\nPengetahuan hero, item, dan skill."
 		"Battle Status":
 			skill_description.text = "Coming soon\nStatistik dan ringkasan pertempuran."
 		_:
