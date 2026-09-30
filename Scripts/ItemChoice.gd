@@ -49,13 +49,27 @@ func choose(hero: Piece, choices: Array[int], timeout_seconds: float = 10.0) -> 
 		var id := choices[index]
 		var x := 0.0 if index == 0 else 670.0
 		_label(Catalog.NAMES[id], Vector2(142 + x, 318), Vector2(300, 66), 29)
-		var button := TextureButton.new()
+		var button := Button.new()
 		button.disabled = true
-		button.texture_normal = Catalog.texture(id)
-		button.ignore_texture_size = true
-		button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-		button.position = Vector2(150 + x, 436)
-		button.size = Vector2(284, 244)
+		button.position = Vector2(80 + x, 300)
+		button.size = Vector2(440, 610)
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		# Match the inside contour, including the gold corner and edge ornaments.
+		# Texture UVs fill the opening while the original frame stays visible.
+		var art := Polygon2D.new()
+		art.name = "ItemArtwork"
+		art.texture = Catalog.texture(id)
+		var contour := PackedVector2Array([Vector2(146, 431), Vector2(280, 431), Vector2(292, 442), Vector2(305, 431), Vector2(415, 431), Vector2(437, 453), Vector2(437, 546), Vector2(425, 559), Vector2(437, 573), Vector2(437, 663), Vector2(415, 685), Vector2(305, 685), Vector2(292, 674), Vector2(280, 685), Vector2(168, 685), Vector2(146, 663), Vector2(146, 573), Vector2(158, 559), Vector2(146, 546)])
+		var uv := PackedVector2Array()
+		var texture_size := art.texture.get_size()
+		var fill := maxf(291.0 / texture_size.x, 254.0 / texture_size.y)
+		for point in contour:
+			uv.append((point - Vector2(291.5, 558)) / fill + texture_size * 0.5)
+		art.polygon = contour
+		art.uv = uv
+		art.position = Vector2(-80, -300)
+		button.add_child(art)
 		button.pivot_offset = button.size * 0.5
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		button.tooltip_text = Catalog.NAMES[id] + "\n" + Catalog.EFFECTS[id]
@@ -73,7 +87,7 @@ func choose(hero: Piece, choices: Array[int], timeout_seconds: float = 10.0) -> 
 	entry_tween.tween_property(self, "transition_zoom", 1.0, 0.4)
 	entry_tween.finished.connect(func():
 		entering = false
-		for button: TextureButton in buttons.values():
+		for button: Button in buttons.values():
 			button.disabled = offered.is_empty()
 	)
 	var id: int = await selected
@@ -96,11 +110,11 @@ func _select(id: int, manual: bool = false) -> void:
 	countdown.text = "%s dipilih!" % Catalog.NAMES[id]
 	var tween := create_tween().set_parallel(true)
 	for option: int in buttons:
-		var button: TextureButton = buttons[option]
+		var button: Button = buttons[option]
 		button.disabled = true
 		if option == id:
-			tween.tween_property(button, "scale", Vector2.ONE * 1.10, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			tween.tween_property(button, "scale", Vector2.ONE, 0.22).set_delay(0.18)
+			tween.tween_property(button, "modulate", Color(1.25, 1.25, 1.25), 0.18)
+			tween.tween_property(button, "modulate", Color.WHITE, 0.22).set_delay(0.18)
 		else:
 			tween.tween_property(button, "modulate", Color(0.5, 0.5, 0.5, 0.45), 0.25)
 	tween.chain().tween_interval(0.15)

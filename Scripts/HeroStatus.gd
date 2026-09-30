@@ -30,7 +30,7 @@ func apply(id: String, turns: int = -1) -> bool:
 		var charges := 1 if id == "Shield" else maxi(1, turns)
 		if effects.has(id):
 			charges += int(effects[id].charges)
-		effects[id] = {"turns": -1, "elapsed": 0, "charges": charges}
+		effects[id] = {"turns": 1 if id == "Nature Shield" else -1, "elapsed": 0, "charges": mini(4, charges) if id == "Nature Shield" else charges}
 		return true
 	if effects.has(id):
 		var entry: Dictionary = effects[id]
@@ -54,7 +54,7 @@ func summary() -> String:
 		if id == "Cursed":
 			text += " (%d giliran untuk dadu 4)" % (4 - entry.elapsed)
 		elif entry.has("charges"):
-			text += " (%d serangan)" % entry.charges
+			text += " (%d poin, 1 giliran)" % entry.charges if id == "Nature Shield" else " (%d serangan)" % entry.charges
 		elif entry.turns > 0:
 			text += " (%d giliran)" % entry.turns
 		lines.append(text)

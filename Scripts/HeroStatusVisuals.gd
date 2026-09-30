@@ -42,6 +42,8 @@ func refresh() -> void:
 		if turns > 0 or charges > 0:
 			var label := Label.new()
 			label.text = "%dx" % charges if charges > 0 else "%dt" % turns
+			if id == "Nature Shield":
+				label.text = "%d" % charges
 			label.name = "Counter"
 			label.position = Vector2(14, 8)
 			label.add_theme_font_size_override("font_size", 24)

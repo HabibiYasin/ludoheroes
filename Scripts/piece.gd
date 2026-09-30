@@ -12,7 +12,6 @@ const StatusCatalog = preload("res://Scripts/HeroStatus.gd")
 var Status = StatusCatalog.new()
 var SkillCooldown: int = 0
 var SkillCooldownAwaitingFirstTurn := false
-var NatureShieldStunnedThisTurn := false
 
 func ApplyStatus(id: String, turns: int = -1) -> bool:
 	if Health <= 0 or IsInHome or not Status.apply(id, turns):
@@ -33,7 +32,12 @@ func ClearStatuses() -> void:
 
 func BeginStatusTurn() -> void:
 	Status.moved_this_turn = false
-	NatureShieldStunnedThisTurn = false
+	# Every timed status counts the affected owner's turn starts (A4 -> A5).
+	for id: String in Status.effects.keys():
+		if Status.effects[id].turns > 0:
+			Status.effects[id].turns -= 1
+			if Status.effects[id].turns == 0:
+				Status.effects.erase(id)
 	# The next owner turn is the first full locked turn, not time already served.
 	if SkillCooldownAwaitingFirstTurn:
 		SkillCooldownAwaitingFirstTurn = false
@@ -60,14 +64,6 @@ func EndStatusTurn() -> void:
 			Health = 0
 			SendBackToLobby()
 			return
-	for id: String in Status.effects.keys():
-		if Status.effects[id].get("skip_owner_tick", false):
-			Status.effects[id]["skip_owner_tick"] = false
-			continue
-		if Status.effects[id].turns > 0:
-			Status.effects[id].turns -= 1
-			if Status.effects[id].turns == 0:
-				Status.effects.erase(id)
 	StatsChanged.emit()
 
 # Health loss from statuses bypasses attack defenses and cannot reflect again.
@@ -151,7 +147,6 @@ var MagicalDefense: int = 0:
 func InitializeStats() -> void:
 	SkillCooldown = 0
 	SkillCooldownAwaitingFirstTurn = false
-	NatureShieldStunnedThisTurn = false
 	ClearStatuses()
 	MatchScore = 0
 	MatchKills = 0
@@ -181,7 +176,7 @@ func GetIncomingDamage(amount: int, direct: bool = true, damage_type: DamageType
 	if not is_skill and HasStatus("Shield"):
 		return 0
 	var defense := MagicalDefense if damage_type == DamageType.MAGICAL else PhysicalDefense
-	var nature_reduction := 1 if not is_skill and HasStatus("Nature Shield") else 0
+	var nature_reduction := int(Status.effects["Nature Shield"].charges) if not is_skill and HasStatus("Nature Shield") else 0
 	return maxi(0, amount - defense - nature_reduction - (1 if HasClass("Tank") and not direct else 0))
 
 func Heal(amount: int) -> void:
@@ -239,16 +234,14 @@ func TakeDamage(amount: int, direct: bool = true, damage_type: DamageType = Dama
 		RemoveStatus("Shield")
 		return false
 	var nature_active := not is_skill and HasStatus("Nature Shield")
+	var defense := MagicalDefense if damage_type == DamageType.MAGICAL else PhysicalDefense
+	var damage_before_shield := maxi(0, amount - defense - (1 if HasClass("Tank") and not direct else 0))
 	Health = maxi(0, Health - GetIncomingDamage(amount, direct, damage_type, is_skill))
 	if nature_active:
-		Status.effects["Nature Shield"].charges -= 1
+		Status.effects["Nature Shield"].charges -= mini(damage_before_shield, int(Status.effects["Nature Shield"].charges))
 		if Status.effects["Nature Shield"].charges <= 0:
 			Status.effects.erase("Nature Shield")
 	StatsChanged.emit()
-	if nature_active and attacker != null and attacker != self and not attacker.NatureShieldStunnedThisTurn:
-		attacker.NatureShieldStunnedThisTurn = true
-		if attacker.ApplyStatus("Stun", 1):
-			attacker.Status.effects["Stun"]["skip_owner_tick"] = true
 	return Health == 0
 
 func GetAttackPower() -> int:

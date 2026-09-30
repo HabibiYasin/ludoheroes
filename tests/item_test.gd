@@ -53,13 +53,17 @@ func _run() -> void:
 	var spawn_choice: int = board.item_choice.offered[0]
 	hud._refresh_recommendations()
 	assert(hud.recommendations.size() == 4)
-	assert(hud.recommendation_icons[0].texture == hero.PieceTexture)
+	assert(hud.recommendation_icons[0].texture == Catalog.texture(spawn_choice))
+	assert(not hud.hero_portraits[2].visible and not hud.hero_portraits[3].visible)
 	assert(board.item_choice.buttons[board.item_choice.offered[0]].disabled)
 	while board.item_choice.entering:
 		await get_tree().process_frame
 	hud._refresh_recommendations()
 	assert(not board.item_choice.buttons[spawn_choice].disabled)
-	_click(board.item_choice.buttons[spawn_choice])
+	if "--capture-shop" in OS.get_cmdline_user_args():
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://.godot/item_shop.png")
+	_click(board.item_choice.buttons[spawn_choice], Vector2(220, 50))
 	assert(board.item_choice.offered.is_empty())
 	# Repeated taps cannot award the second item or inspect a hero.
 	hud._inspect_recommendation(1)
@@ -69,6 +73,7 @@ func _run() -> void:
 	assert(hero.Items.size() == 1)
 	hud._refresh_recommendations()
 	assert(hud.recommendations.size() == 4)
+	assert(hud.hero_portraits[2].visible and hud.recommendation_icons[0].texture == hero.PieceTexture)
 	hero.MoveBonus = 0
 	# Award checks include every enemy spawn, regardless of the hero's color.
 	board.BotsEnabled = true
@@ -95,7 +100,7 @@ func _run() -> void:
 	while board.item_choice.entering:
 		await get_tree().process_frame
 	hud._refresh_recommendations()
-	_click(board.item_choice.buttons[chosen])
+	_click(hud.hero_portraits[1])
 	assert(board.item_choice.offered.is_empty())
 	while board.item_choice.stage != null:
 		await get_tree().process_frame
@@ -105,7 +110,12 @@ func _run() -> void:
 	board.AwardLandingItem(hero)
 	assert(board.item_choice.stage != null)
 	assert(board.item_choice.remaining == 10.0)
-	await board.item_choice._select(board.item_choice.offered[0])
+	while board.item_choice.entering:
+		await get_tree().process_frame
+	_click(board.item_choice.buttons[board.item_choice.offered[0]], Vector2(220, 520))
+	assert(board.item_choice.offered.is_empty())
+	while board.item_choice.stage != null:
+		await get_tree().process_frame
 	while hero.Items.size() < 2:
 		for id in range(6):
 			if not hero.Items.has(id):
@@ -164,8 +174,8 @@ func _run() -> void:
 	print("PASS: six item stats, unique offers, two type cap, stacks, eight reward tiles, own/enemy spawn rewards, summon reward, manual/timeout/bot awards, pause, die continuation and move bonus")
 	get_tree().quit()
 
-func _click(button: BaseButton) -> void:
-	var point := button.get_global_transform_with_canvas() * (button.size * 0.5)
+func _click(button: BaseButton, local_point: Vector2 = Vector2(-1, -1)) -> void:
+	var point := button.get_global_transform_with_canvas() * (button.size * 0.5 if local_point.x < 0 else local_point)
 	for pressed in [true, false]:
 		var event := InputEventMouseButton.new()
 		event.position = point

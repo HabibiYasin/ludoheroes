@@ -40,9 +40,9 @@ beyond a safe tile, like normal ranged combat.
 | Vilmira | Blood Curse | 6 | 3/3 | 3 | Bleed one enemy for two turns; nearest first. Class is Mage. |
 | Zyrella | Witch's Dash | 1, 2 | 0/0 | 1 | Move exactly three path cells. |
 | Silvy | Briar Volley | 2, 3 | 4/0 | 2 | Damage 1 to up to three enemies, nearest first. |
-| Garruk | Thornhide | 2, 3 | 0/0 | 1 | Two Nature Shield charges: -1 damage per basic hit and Stun 1 turn, once per attacker turn. |
+| Garruk | Thornhide | 2, 3 | 0/0 | 1 | Two Nature Shield absorption points for one owner turn, capped at 4. No Stun. |
 | Pirunrun | Fairy Sparks | 2, 3 | 4/4 | 2 | Damage 2 to two distinct random enemies. |
-| Mycellia | Sporeguard | 4, 5 | 5/5 | 3 | Four Nature Shield charges on the nearest ally. |
+| Mycellia | Sporeguard | 4, 5 | 5/5 | 3 | Four Nature Shield absorption points on the nearest ally for one owner turn. |
 | Skalfin | Twin Tides | 2, 3 | 2/2 | 1 | Two hits on one enemy; each deals 1 with an independent 50% chance of +1. |
 | Octavus | Tidal Barrage | 6 | 4/4 | 3 | Damage 2 to up to four distinct random enemies. |
 | Velissa | Drowning Hex | 2, 3 | 3/3 | 2 | Drown one random enemy for three turns. |
@@ -50,13 +50,18 @@ beyond a safe tile, like normal ranged combat.
 
 Manual selection overrides automatic lowest-HP/random/nearest selection. A skill
 can affect fewer than its maximum targets if fewer eligible enemies exist.
-Nature Shield 2/4 denotes attack charges, with no turn expiry. Each hit consumes
-one charge and reduces damage by one; reapplication adds charges. Shield is also
+Nature Shield 2/4 denotes damage absorption points, capped at four. Each basic hit
+spends the damage absorbed after defenses; overflow reaches HP. Reapplication
+adds points up to four and refreshes its fixed one-turn duration. Application
+during Thornvale's third player slot in A4 expires as that same slot begins in
+A5, before rolling or acting. It never stuns or reflects damage. Shield is
 permanent until one basic hit or death, and cannot stack. Anata's manual picker
 uses the same unshielded-ally preference and self fallback as automatic targeting.
 Other non-stackable statuses reject reapplication; other stackable statuses add duration.
-Buffs applied during their owner's turn do not lose a duration tick immediately
-at that turn's end. Other duration rules use the status system's owner-turn ticks.
+All timed buffs and debuffs lose duration at the affected owner's next turn start,
+never at turn end. One-turn effects expire before that owner's next action;
+two-turn effects expire at the second next owner-turn start. Cooldown retains
+the separate full-skipped-turn rule described above.
 
 Vilmira uses a skill-specific Bleed variant: a move of 1–3 actual steps loses 1 HP,
 4–6 loses 2 HP, and longer moves lose at most 3 HP. It never applies Cursed.
@@ -64,9 +69,8 @@ Hidden uses a translucent sprite and a text marker, without inventing a new asse
 
 Damaging skills add SkillDamage per hit. Fairy Sparks and Tidal Barrage use magical
 defense; the weapon skills use physical defense. Damaging skills, including both
-hits of Twin Tides, bypass Shield and Nature Shield without consuming charges or
-triggering Stun. Nyssara's two basic hits consume protection separately; Nature
-Shield reduces each hit but stuns her only once that turn. Shield has priority
+hits of Twin Tides, bypass Shield and Nature Shield without consuming protection.
+Nyssara's two basic hits consume absorption points separately. Shield has priority
 when both shields are present. Defeated heroes lose statuses and revive at base.
 
 Witch's Dash uses exactly three steps without die/item/Runner movement bonuses.

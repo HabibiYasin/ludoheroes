@@ -159,7 +159,6 @@ func cast(hero: Piece, die_index: int, chosen: Array[Piece] = [], manual: bool =
 			break
 		var damage := 0
 		var health_before := target.Health
-		var previous_statuses: Array = target.Status.effects.keys()
 		match data.effect:
 			"damage":
 				for hit in range(int(data.get("hits", 1))):
@@ -181,11 +180,6 @@ func cast(hero: Piece, die_index: int, chosen: Array[Piece] = [], manual: bool =
 			"nature": target.ApplyStatus("Nature Shield", int(data.duration))
 			"thornhide":
 				target.ApplyStatus("Nature Shield", int(data.duration))
-		if target.CurrentPlayerColor == board.currentPlayerColor:
-			var applied: Array = {"ambush": ["Hidden"]}.get(data.effect, [])
-			for id: String in applied:
-				if target.HasStatus(id) and not previous_statuses.has(id):
-					target.Status.effects[id]["skip_owner_tick"] = true
 		var territory := board.way_points.GetTerritoryFaction(target.CurrentWayPoint) if target.CurrentWayPoint != null else ""
 		records.append({"texture": target.PieceSprite.texture, "damage": damage, "territory": territory, "name": target.HeroId, "effect": {"stun": "Stun", "bleed": "Bleed", "drown": "Drown"}.get(data.effect, "0")})
 		if target.Health <= 0:

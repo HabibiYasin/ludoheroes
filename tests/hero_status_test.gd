@@ -18,8 +18,8 @@ func _run() -> void:
 		var stackable: bool = hero.StatusCatalog.DEFINITIONS[id].stackable
 		assert(hero.ApplyStatus(id, 3) == stackable)
 		if id in ["Shield", "Nature Shield"]:
-			assert(hero.Status.effects[id].turns == -1)
-			assert(hero.Status.effects[id].charges == (5 if stackable else 1))
+			assert(hero.Status.effects[id].turns == (1 if stackable else -1))
+			assert(hero.Status.effects[id].charges == (4 if stackable else 1))
 		else:
 			assert(hero.Status.effects[id].turns == (5 if stackable else 2))
 		assert(hero.Status.count(id) == 1)
@@ -27,12 +27,24 @@ func _run() -> void:
 			assert(ResourceLoader.exists(hero.StatusCatalog.ASSET_PATH + hero.StatusCatalog.DEFINITIONS[id].file))
 	hero.ClearStatuses()
 	assert(not hero.ApplyStatus("missing", 1))
+	# All finite statuses share the next-owner-turn clock, including enemy debuffs.
+	for id: String in hero.StatusCatalog.DEFINITIONS:
+		if id == "Shield":
+			continue
+		hero.ApplyStatus(id, 1)
+		hero.EndStatusTurn()
+		assert(hero.HasStatus(id))
+		hero.BeginStatusTurn()
+		assert(not hero.HasStatus(id))
+	hero.Health = 100
 	assert(not hero.ApplyStatus("Stun", 0))
 	hero.ApplyStatus("Stun", 2)
 	assert(not hero.CanMoveWithDice(6, 57))
 	hero.EndStatusTurn()
 	assert(hero.HasStatus("Stun"))
-	hero.EndStatusTurn()
+	hero.BeginStatusTurn()
+	assert(hero.HasStatus("Stun"))
+	hero.BeginStatusTurn()
 	assert(hero.CanMoveWithDice(6, 57))
 	hero.ApplyStatus("Frozen", 3)
 	assert(not hero.CanMoveWithDice(5, 57))
@@ -65,29 +77,32 @@ func _run() -> void:
 	var attacker := _hero()
 	hero.ApplyStatus("Nature Shield", 2)
 	hero.ApplyStatus("Nature Shield", 3)
-	hero.TakeDamage(3, true, Piece.DamageType.PHYSICAL, attacker)
-	assert(hero.Health == 96 and attacker.Health == 100 and attacker.HasStatus("Stun"))
 	assert(hero.Status.effects["Nature Shield"].charges == 4)
-	attacker.RemoveStatus("Stun")
-	attacker.ApplyStatus("Nature Shield", 2)
-	hero.TakeDamage(1, true, Piece.DamageType.MAGICAL, attacker)
-	assert(hero.Health == 96 and attacker.Health == 100 and not attacker.HasStatus("Stun"))
-	assert(hero.Status.effects["Nature Shield"].charges == 3)
-	for turn in range(8):
-		hero.EndStatusTurn()
-	assert(hero.Status.effects["Nature Shield"].charges == 3)
+	hero.TakeDamage(3, true, Piece.DamageType.PHYSICAL, attacker)
+	assert(hero.Health == 98 and attacker.Health == 100 and not attacker.HasStatus("Stun"))
+	assert(hero.Status.effects["Nature Shield"].charges == 1)
+	hero.TakeDamage(3, true, Piece.DamageType.PHYSICAL, attacker)
+	assert(hero.Health == 96 and not hero.HasStatus("Nature Shield"))
+	hero.ApplyStatus("Nature Shield", 4)
 	hero.TakeDamage(2, true, Piece.DamageType.MAGICAL, attacker, true)
-	assert(hero.Health == 94 and hero.Status.effects["Nature Shield"].charges == 3)
+	assert(hero.Health == 94 and hero.Status.effects["Nature Shield"].charges == 4)
 	hero.ApplyStatus("Shield", 2)
 	hero.TakeDamage(50, true, Piece.DamageType.PHYSICAL, attacker)
 	assert(hero.Health == 94 and attacker.Health == 100)
-	assert(hero.Status.effects["Nature Shield"].charges == 3)
+	assert(hero.Status.effects["Nature Shield"].charges == 4)
+	hero.PhysicalDefense = 2
+	hero.TakeDamage(2, true, Piece.DamageType.PHYSICAL, attacker)
+	assert(hero.Status.effects["Nature Shield"].charges == 4)
+	hero.TakeDamage(3, true, Piece.DamageType.PHYSICAL, attacker)
+	assert(hero.Status.effects["Nature Shield"].charges == 3 and hero.Health == 94)
+	hero.PhysicalDefense = 0
+	hero.EndStatusTurn()
+	assert(hero.HasStatus("Nature Shield"))
 	attacker.BeginStatusTurn()
-	for hit in range(3):
-		hero.TakeDamage(1, true, Piece.DamageType.PHYSICAL, attacker)
-	assert(hero.Health == 94 and not hero.HasStatus("Nature Shield") and attacker.HasStatus("Stun"))
-	hero.TakeDamage(1)
-	assert(hero.Health == 93)
+	attacker.EndStatusTurn()
+	assert(hero.HasStatus("Nature Shield"))
+	hero.BeginStatusTurn()
+	assert(not hero.HasStatus("Nature Shield") and not attacker.HasStatus("Stun"))
 	attacker.free()
 
 	hero.ClearStatuses()
@@ -110,7 +125,7 @@ func _run() -> void:
 	hero.ApplyMovementStatuses(2)
 	hero.EndStatusTurn()
 	assert(hero.Health == 96)
-	print("PASS: persistent Shield/charges, skill bypass, one Stun per attacker turn, Bleed cap, Thorned, Drown")
+	print("PASS: Shield, Nature Shield cap/absorption/overflow/expiry, skill bypass, no retaliation, movement statuses")
 
 	hero.ClearStatuses()
 	hero.ApplyStatus("Cursed")
@@ -246,7 +261,7 @@ func _integration() -> void:
 		assert(not cell.myHoldings.has(hero))
 	assert(board.remainingDice == [0, 1])
 	print("PASS: real movement/preview, Frozen break, stacked duration, owner turn timing, pair-summon block, fatal movement cleanup")
-	# A lethal hit clears defender charges but still stuns the surviving attacker.
+	# A lethal hit clears depleted protection without stunning the attacker.
 	var defender: Piece = board.piecesManager.RedPieces.Pieces[0]
 	var cell := board.way_points.green_path[6]
 	defender.CurrentState = GameManager.PieceStateEnum.InWayPoint
@@ -257,15 +272,15 @@ func _integration() -> void:
 	hero.Health = 1
 	hero.Attack = 0
 	hero.SetCurrentPositionAndCheckKill(5)
-	hero.Attack = 2
+	hero.Attack = 3
 	board.remainingDice.assign([1, 2])
 	board.currentDiceValue = 1
 	board.selectedDiceIndex = 0
 	await board._on_player_select_piece(hero)
 	assert(not hero.IsInLobby() and defender.IsInLobby())
-	assert(hero.HasStatus("Stun") and defender.Status.effects.is_empty())
+	assert(not hero.HasStatus("Stun") and defender.Status.effects.is_empty())
 	assert(cell.myHoldings.has(hero) and not cell.myHoldings.has(defender))
 	assert(board.remainingDice == [0, 2])
-	print("PASS: lethal basic attack consumes protection, clears defeated statuses and stuns attacker")
+	print("PASS: lethal basic attack consumes protection and clears defeated statuses without retaliation")
 	game.queue_free()
 	await get_tree().process_frame

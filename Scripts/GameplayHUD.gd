@@ -24,6 +24,7 @@ var hero_move: Label
 var hero_skill_damage: Label
 var hero_status_strip: Control
 var hero_skill_slot: Panel
+var hero_skill_cooldown: Label
 var match_results: CanvasLayer
 
 var board: BoardManager
@@ -100,6 +101,10 @@ func _ready() -> void:
 		if i == 0:
 			hero_skill_slot = slot
 			_picture(slot, Rect2(6, 6, 96, 96), preload("res://Arts/Textures_Game/UI/Controller/skills.png"))
+			hero_skill_cooldown = _label(slot, "", Rect2(12, 76, 84, 28), 22, GOLD)
+			hero_skill_cooldown.name = "SkillCooldown"
+			hero_skill_cooldown.add_theme_stylebox_override("normal", _style(INK))
+			hero_skill_cooldown.hide()
 		if i > 0:
 			var icon := _picture(slot, Rect2(0, 0, 108, 108), null)
 			icon.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -217,6 +222,8 @@ func _refresh_hero_stats() -> void:
 	if not is_instance_valid(inspected_hero):
 		return
 	var skill: Dictionary = board.skills.definition(inspected_hero)
+	hero_skill_cooldown.visible = not skill.is_empty() and inspected_hero.SkillCooldown > 0
+	hero_skill_cooldown.text = "CD %d" % inspected_hero.SkillCooldown
 	if not skill.is_empty():
 		hero_skill_slot.tooltip_text = "%s\nDadu: %s\nJarak depan/belakang: %d/%d\nCooldown: %d giliran (sisa %d)" % [skill.name, str(skill.dice), skill.front, skill.behind, skill.cooldown, inspected_hero.SkillCooldown]
 	for child in hero_status_strip.get_children():
@@ -232,7 +239,7 @@ func _refresh_hero_stats() -> void:
 		icon.mouse_filter = Control.MOUSE_FILTER_STOP
 		icon.tooltip_text = "%s (%s)" % [id, status_catalog.DEFINITIONS[id].type]
 		if entry.has("charges"):
-			icon.tooltip_text += " - %d serangan" % entry.charges
+			icon.tooltip_text += " - %d poin, 1 giliran" % entry.charges if id == "Nature Shield" else " - %d serangan" % entry.charges
 		elif entry.turns > 0:
 			icon.tooltip_text += " - %d giliran" % entry.turns
 		status_index += 1
@@ -467,6 +474,28 @@ func _refresh_ranking() -> void:
 		rank_tween.tween_property(cards[ranking[i]], "position:y", 138.0 + i * 94.0, 0.45)
 
 func _refresh_recommendations() -> void:
+	if board.item_choice.stage != null:
+		var choices: Array = board.item_choice.buttons.keys()
+		for i in range(hero_portraits.size()):
+			var portrait = hero_portraits[i]
+			portrait.visible = i < choices.size()
+			skill_buttons[i].hide()
+			skill_cooldown_labels[i].hide()
+			if i >= choices.size():
+				continue
+			var id: int = choices[i]
+			portrait.portrait.texture = preload("res://Scripts/ItemCatalog.gd").texture(id)
+			portrait.background.texture = null
+			portrait.set_action("move")
+			portrait.ring_color = GOLD
+			portrait.shade.color = Color.TRANSPARENT
+			portrait.disabled = board.item_choice.entering or board.item_choice.offered.is_empty()
+			portrait.tooltip_text = preload("res://Scripts/ItemCatalog.gd").NAMES[id] + "\n" + preload("res://Scripts/ItemCatalog.gd").EFFECTS[id]
+		displayed_player = -1
+		return
+	for portrait in hero_portraits:
+		portrait.show()
+		portrait.disabled = false
 	var color := int(board.currentPlayerColor) if board.IsHumanTurn() else int(board.HumanPlayerColor)
 	if color != displayed_player:
 		displayed_player = color
@@ -560,7 +589,12 @@ func _hero_action(hero: Piece) -> String:
 	return "skill" if _skill_die(hero) >= 0 else "move"
 
 func _inspect_recommendation(index: int) -> void:
-	if get_tree().paused or board.item_choice.stage != null:
+	if get_tree().paused:
+		return
+	if board.item_choice.stage != null:
+		var choices: Array = board.item_choice.buttons.keys()
+		if not board.item_choice.entering and index >= 0 and index < choices.size():
+			board.item_choice._select(choices[index], true)
 		return
 	_refresh_recommendations()
 	if index < 0 or index >= recommendations.size():
