@@ -1,6 +1,6 @@
 extends Node
 
-# Run this scene to inspect all ten supplied status assets on the actual board.
+# Run this scene to inspect status assets and the additional skill effects.
 func _ready() -> void:
 	GameManager.LocalPlayerColor = GameManager.PlayerColor.Blue
 	var game = load("res://Levels/Level_MainGamePlay.tscn").instantiate()
@@ -11,7 +11,7 @@ func _ready() -> void:
 	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.Null)
 	var board: BoardManager = game.get_node("CoreGamplay/Board/board_GamePlay")
 	var ids := preload("res://Scripts/HeroStatus.gd").DEFINITIONS.keys()
-	var slots := [2, 6, 10, 15, 19, 23, 28, 32, 36, 41]
+	var slots := [2, 6, 10, 15, 19, 23, 28, 32, 36, 41, 45, 49]
 	for index in range(ids.size()):
 		var group := board.piecesManager.GetPieceGroupBasedOnType(index / 4)
 		var hero: Piece = group.Pieces[index % 4]

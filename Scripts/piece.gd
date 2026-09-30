@@ -10,6 +10,8 @@ signal StatsChanged
 
 const StatusCatalog = preload("res://Scripts/HeroStatus.gd")
 var Status = StatusCatalog.new()
+var SkillCooldown: int = 0
+var NatureShieldStunnedThisTurn := false
 
 func ApplyStatus(id: String, turns: int = -1) -> bool:
 	if Health <= 0 or IsInHome or not Status.apply(id, turns):
@@ -30,6 +32,10 @@ func ClearStatuses() -> void:
 
 func BeginStatusTurn() -> void:
 	Status.moved_this_turn = false
+	NatureShieldStunnedThisTurn = false
+	if SkillCooldown > 0:
+		SkillCooldown -= 1
+	StatsChanged.emit()
 
 func PrepareStatusRoll(values: Array[int]) -> void:
 	if values.has(4):
@@ -51,6 +57,9 @@ func EndStatusTurn() -> void:
 			SendBackToLobby()
 			return
 	for id: String in Status.effects.keys():
+		if Status.effects[id].get("skip_owner_tick", false):
+			Status.effects[id]["skip_owner_tick"] = false
+			continue
 		if Status.effects[id].turns > 0:
 			Status.effects[id].turns -= 1
 			if Status.effects[id].turns == 0:
@@ -71,6 +80,8 @@ func ApplyMovementStatuses(distance: int) -> bool:
 	# A second die gets a new sequence, even when both dice have the same value.
 	Status.confusion_seed = randi()
 	var damage := mini(3, distance / 2) if HasStatus("Bleed") else 0
+	if HasStatus("Bleed") and Status.effects["Bleed"].get("blood_curse", false):
+		damage = mini(3, ceili(distance / 3.0))
 	damage += maxi(0, distance - 3) * Status.count("Thorned")
 	if TakeStatusDamage(damage):
 		SendBackToLobby()
@@ -134,6 +145,8 @@ var MagicalDefense: int = 0:
 		StatsChanged.emit()
 
 func InitializeStats() -> void:
+	SkillCooldown = 0
+	NatureShieldStunnedThisTurn = false
 	ClearStatuses()
 	MatchScore = 0
 	MatchKills = 0
@@ -159,11 +172,12 @@ func HasClass(class_value: String) -> bool:
 			return true
 	return false
 
-func GetIncomingDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL) -> int:
-	if HasStatus("Shield"):
+func GetIncomingDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL, is_skill: bool = false) -> int:
+	if not is_skill and HasStatus("Shield"):
 		return 0
 	var defense := MagicalDefense if damage_type == DamageType.MAGICAL else PhysicalDefense
-	return maxi(0, amount - defense - Status.count("Nature Shield") - (1 if HasClass("Tank") and not direct else 0))
+	var nature_reduction := 1 if not is_skill and HasStatus("Nature Shield") else 0
+	return maxi(0, amount - defense - nature_reduction - (1 if HasClass("Tank") and not direct else 0))
 
 func Heal(amount: int) -> void:
 	if Health <= 0 or amount <= 0 or Health >= MaxHealth:
@@ -213,18 +227,27 @@ func _base_move_distance(dice_value: int) -> int:
 			return dice_value
 	return distance
 
-func TakeDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL, attacker: Piece = null) -> bool:
+func TakeDamage(amount: int, direct: bool = true, damage_type: DamageType = DamageType.PHYSICAL, attacker: Piece = null, is_skill: bool = false) -> bool:
 	if Health <= 0 or amount <= 0:
 		return false
-	if HasStatus("Shield"):
+	if not is_skill and HasStatus("Shield"):
 		RemoveStatus("Shield")
 		return false
-	var reflected := Status.count("Nature Shield")
-	Health = maxi(0, Health - GetIncomingDamage(amount, direct, damage_type))
+	var nature_active := not is_skill and HasStatus("Nature Shield")
+	Health = maxi(0, Health - GetIncomingDamage(amount, direct, damage_type, is_skill))
+	if nature_active:
+		Status.effects["Nature Shield"].charges -= 1
+		if Status.effects["Nature Shield"].charges <= 0:
+			Status.effects.erase("Nature Shield")
 	StatsChanged.emit()
-	if attacker != null and attacker != self and reflected > 0:
-		attacker.TakeStatusDamage(reflected)
+	if nature_active and attacker != null and attacker != self and not attacker.NatureShieldStunnedThisTurn:
+		attacker.NatureShieldStunnedThisTurn = true
+		if attacker.ApplyStatus("Stun", 1):
+			attacker.Status.effects["Stun"]["skip_owner_tick"] = true
 	return Health == 0
+
+func GetAttackPower() -> int:
+	return Attack * (2 if HasStatus("Hidden") else 1)
 
 # -1 means the piece is still in the lobby/base.
 var CurrentPosition: int = -1

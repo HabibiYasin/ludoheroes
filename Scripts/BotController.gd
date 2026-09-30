@@ -40,7 +40,10 @@ func _play_move() -> void:
 		_board.FinishTurn()
 		return
 	_board.SelectDie(move.die_index)
-	_board._on_player_select_piece(move.piece)
+	if move.get("skill", false):
+		_board.skills.cast(move.piece, move.die_index)
+	else:
+		_board._on_player_select_piece(move.piece)
 
 # Keep decision making separate so future combat/skill rules can replace it.
 func ChooseMove() -> Dictionary:
@@ -52,6 +55,12 @@ func ChooseMove() -> Dictionary:
 		var value := _board.remainingDice[index]
 		if value <= 0:
 			continue
+		for piece: Piece in group.Pieces:
+			if _board.skills.can_use(piece, value):
+				var skill_score := 12.0 + _rng.randf()
+				if skill_score > best_score:
+					best_score = skill_score
+					best = {"die_index": index, "piece": piece, "skill": true}
 		for piece in group.GetMovablePieces(value, path_count):
 			var score := _rng.randf()
 			if not piece.IsInLobby() and piece.CurrentPosition + piece.GetMoveDistance(value) == path_count - 1:

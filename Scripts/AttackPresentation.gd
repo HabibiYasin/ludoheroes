@@ -10,6 +10,103 @@ const BATTLE_BACKGROUNDS := {
 var pending: Array[Dictionary] = []
 var stage: Control
 
+func show_skill_name(skill_name: String) -> void:
+	var cover := ColorRect.new()
+	cover.name = "SkillAnnouncement"
+	cover.color = Color(0.03, 0.02, 0.09, 0.65)
+	cover.size = get_viewport().get_visible_rect().size
+	cover.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(cover)
+	var title := Label.new()
+	title.text = skill_name
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.add_theme_font_size_override("font_size", int(76 * minf(cover.size.x / 1920.0, cover.size.y / 1080.0)))
+	title.add_theme_color_override("font_color", Color("ffe49b"))
+	title.add_theme_color_override("font_outline_color", Color("261237"))
+	title.add_theme_constant_override("outline_size", 8)
+	cover.add_child(title)
+	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cover.modulate.a = 0.0
+	var animation := create_tween()
+	animation.tween_property(cover, "modulate:a", 1.0, 0.15)
+	animation.tween_interval(0.65)
+	animation.tween_property(cover, "modulate:a", 0.0, 0.15)
+	await animation.finished
+	cover.queue_free()
+
+func play_skill(caster: Piece, skill_name: String, targets: Array[Dictionary]) -> void:
+	if targets.is_empty():
+		return
+	stage = Control.new()
+	stage.name = "SkillBattle"
+	stage.size = Vector2(1000, 1000)
+	stage.clip_contents = true
+	stage.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(stage)
+	_process(0.0)
+	var background := TextureRect.new()
+	background.name = "BattleBackground"
+	background.texture = BATTLE_BACKGROUNDS.get(targets[0].territory, BATTLE_BACKGROUNDS.get(caster.Faction))
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	background.size = stage.size
+	stage.add_child(background)
+	var title := Label.new()
+	title.text = skill_name
+	title.position = Vector2(30, 35)
+	title.size = Vector2(940, 140)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.add_theme_font_size_override("font_size", 60)
+	title.add_theme_color_override("font_color", Color("ffe49b"))
+	title.add_theme_color_override("font_outline_color", Color.BLACK)
+	title.add_theme_constant_override("outline_size", 7)
+	stage.add_child(title)
+	var attacker := _hero(caster.PieceSprite.texture, Vector2(220, 540))
+	attacker.name = "SkillCaster"
+	var columns := 1 if targets.size() == 1 else 2
+	var rows := ceili(float(targets.size()) / columns)
+	var spacing_y := minf(300, 690.0 / rows)
+	var size_limit := minf(260, spacing_y * 0.85)
+	var effects: Array[AnimatedSprite2D] = []
+	for index in range(targets.size()):
+		var record := targets[index]
+		var center := Vector2(720 if columns == 1 else 580 + (index % columns) * 260, 540 + (index / columns - (rows - 1) * 0.5) * spacing_y)
+		var target := _hero(record.texture, center)
+		target.name = "SkillTarget%d" % index
+		target.scale = Vector2.ONE * size_limit / maxf(record.texture.get_width(), record.texture.get_height())
+		var slash := AnimatedSprite2D.new()
+		slash.sprite_frames = SLASHES
+		slash.position = center
+		var frame_size := SLASHES.get_frame_texture(caster.Faction, 0).get_size()
+		slash.scale = Vector2.ONE * (size_limit * 1.25 / maxf(frame_size.x, frame_size.y))
+		stage.add_child(slash)
+		effects.append(slash)
+		var label := Label.new()
+		label.text = "-%d" % record.damage if record.damage > 0 else String(record.get("effect", "0"))
+		label.position = center + Vector2(-100, -size_limit * 0.6)
+		label.size.x = 200
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 46)
+		label.add_theme_color_override("font_outline_color", Color.BLACK)
+		label.add_theme_constant_override("outline_size", 6)
+		stage.add_child(label)
+	var lunge := create_tween()
+	lunge.tween_property(attacker, "position:x", 360.0, 0.2)
+	await lunge.finished
+	for effect in effects:
+		effect.play(caster.Faction)
+	GameAudio.play_attack()
+	await effects.back().animation_finished
+	var finish := create_tween()
+	finish.tween_interval(0.2)
+	finish.tween_property(stage, "modulate:a", 0.0, 0.25)
+	await finish.finished
+	stage.queue_free()
+	stage = null
+
 func queue_attack(attacker: Piece, defender: Piece, damage: int = -1, battle_cell: WayPoint = null) -> void:
 	if damage < 0:
 		damage = defender.GetIncomingDamage(attacker.Attack)

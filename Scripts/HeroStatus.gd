@@ -11,6 +11,7 @@ const DEFINITIONS := {
 	"Drown": {"file": "Drowned.png", "type": "Debuff", "stackable": true},
 	"Slowed": {"file": "Slowed.png", "type": "Debuff", "stackable": true},
 	"Cursed": {"file": "Cursed.png", "type": "Debuff", "stackable": false},
+	"Hidden": {"file": "", "type": "Buff", "stackable": false},
 }
 const ASSET_PATH := "res://Arts/Textures_Game/Effects/Status/"
 
@@ -23,6 +24,14 @@ func apply(id: String, turns: int = -1) -> bool:
 		return false
 	if id == "Stun" and turns == -1:
 		turns = 1
+	if id in ["Shield", "Nature Shield"]:
+		if id == "Shield" and effects.has(id):
+			return false
+		var charges := 1 if id == "Shield" else maxi(1, turns)
+		if effects.has(id):
+			charges += int(effects[id].charges)
+		effects[id] = {"turns": -1, "elapsed": 0, "charges": charges}
+		return true
 	if effects.has(id):
 		var entry: Dictionary = effects[id]
 		if not DEFINITIONS[id].stackable:
@@ -44,6 +53,8 @@ func summary() -> String:
 		var text := id
 		if id == "Cursed":
 			text += " (%d giliran untuk dadu 4)" % (4 - entry.elapsed)
+		elif entry.has("charges"):
+			text += " (%d serangan)" % entry.charges
 		elif entry.turns > 0:
 			text += " (%d giliran)" % entry.turns
 		lines.append(text)

@@ -23,6 +23,7 @@ var item_counts: Array[Label] = []
 var hero_move: Label
 var hero_skill_damage: Label
 var hero_status_strip: Control
+var hero_skill_slot: Panel
 var match_results: CanvasLayer
 
 var board: BoardManager
@@ -43,6 +44,9 @@ const FACTION_COLORS := [Color("20c770"), Color("b767e4"), Color("478bf5"), Colo
 var round_numbers: Array[Label] = []
 var round_crosses: Array[Label] = []
 var hero_portraits: Array[Button] = []
+var skill_buttons: Array[Button] = []
+var skill_cooldown_labels: Array[Label] = []
+var skill_target_picker: CanvasLayer
 var faction_button: Button
 var displayed_player: int = -1
 var storage_panel: Panel
@@ -92,7 +96,10 @@ func _ready() -> void:
 		style.set_corner_radius_all(0)
 		slot.add_theme_stylebox_override("panel", style)
 		slot.mouse_filter = Control.MOUSE_FILTER_STOP
-		slot.tooltip_text = "Skill - coming soon" if i == 0 else "Slot item kosong"
+		slot.tooltip_text = "Skill hero" if i == 0 else "Slot item kosong"
+		if i == 0:
+			hero_skill_slot = slot
+			_picture(slot, Rect2(6, 6, 96, 96), preload("res://Arts/Textures_Game/UI/Controller/skills.png"))
 		if i > 0:
 			var icon := _picture(slot, Rect2(0, 0, 108, 108), null)
 			icon.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -101,6 +108,8 @@ func _ready() -> void:
 	faction_button = _circle(root, Rect2(83, 780, 286, 286), null, "Domain Authority", _open_skill.bind("Domain Authority"))
 	faction_button.ring_width = 0
 	_build_cards()
+	skill_target_picker = preload("res://Scripts/SkillTargetPicker.gd").new()
+	add_child(skill_target_picker)
 	_build_actions()
 	idle_controller = get_parent().get_node("CoreGamplay/PlayerIdleController")
 	idle_countdown = _label(root, "", Rect2(38, 126, 374, 25), 17)
@@ -207,16 +216,24 @@ func _display_hero(piece: Piece) -> void:
 func _refresh_hero_stats() -> void:
 	if not is_instance_valid(inspected_hero):
 		return
+	var skill: Dictionary = board.skills.definition(inspected_hero)
+	if not skill.is_empty():
+		hero_skill_slot.tooltip_text = "%s\nDadu: %s\nJarak depan/belakang: %d/%d\nCooldown: %d giliran (sisa %d)" % [skill.name, str(skill.dice), skill.front, skill.behind, skill.cooldown, inspected_hero.SkillCooldown]
 	for child in hero_status_strip.get_children():
 		child.free()
 	var status_catalog = preload("res://Scripts/HeroStatus.gd")
 	var status_index := 0
 	for id: String in inspected_hero.Status.effects:
 		var entry: Dictionary = inspected_hero.Status.effects[id]
-		var icon := _picture(hero_status_strip, Rect2(status_index * 34, 0, 32, 32), load(status_catalog.ASSET_PATH + status_catalog.DEFINITIONS[id].file))
+		var filename: String = status_catalog.DEFINITIONS[id].file
+		var icon := _picture(hero_status_strip, Rect2(status_index * 34, 0, 32, 32), load(status_catalog.ASSET_PATH + filename) if not filename.is_empty() else null)
+		if filename.is_empty():
+			_label(icon, "H", Rect2(0, 0, 32, 32), 24, GOLD)
 		icon.mouse_filter = Control.MOUSE_FILTER_STOP
 		icon.tooltip_text = "%s (%s)" % [id, status_catalog.DEFINITIONS[id].type]
-		if entry.turns > 0:
+		if entry.has("charges"):
+			icon.tooltip_text += " - %d serangan" % entry.charges
+		elif entry.turns > 0:
 			icon.tooltip_text += " - %d giliran" % entry.turns
 		status_index += 1
 	var catalog = preload("res://Scripts/ItemCatalog.gd")
@@ -402,6 +419,19 @@ func _build_cards() -> void:
 		hero_portraits.append(portrait)
 		recommendation_buttons.append(portrait)
 		recommendation_icons.append(portrait.portrait)
+		var skill_button := preload("res://Scripts/SkillButton.gd").new()
+		skill_button.name = "SkillButton"
+		skill_button.position = Vector2(106, -12)
+		skill_button.size = Vector2(86, 86)
+		portrait.add_child(skill_button)
+		skill_button.quick_cast.connect(_use_hero_skill.bind(i, false))
+		skill_button.choose_targets.connect(_use_hero_skill.bind(i, true))
+		skill_button.hide()
+		skill_buttons.append(skill_button)
+		var cooldown_label := _label(portrait, "", Rect2(43, 150, 100, 28), 21, GOLD)
+		cooldown_label.add_theme_stylebox_override("normal", _style(INK))
+		cooldown_label.hide()
+		skill_cooldown_labels.append(cooldown_label)
 
 func _build_actions() -> void:
 	var icons := "res://Arts/Textures_Game/Icons/"
@@ -451,12 +481,43 @@ func _refresh_recommendations() -> void:
 		var hero := recommendations[i]
 		var action := _hero_action(hero)
 		var portrait = hero_portraits[i]
-		portrait.set_action(action)
+		portrait.set_action("move" if action == "skill" else action)
+		var skill_die := _skill_die(hero)
+		skill_cooldown_labels[i].visible = hero.SkillCooldown > 0 and not hero.IsInHome
+		skill_cooldown_labels[i].text = "CD %d" % hero.SkillCooldown
+		skill_buttons[i].visible = skill_die >= 0
+		if skill_die >= 0:
+			var skill: Dictionary = board.skills.definition(hero)
+			skill_buttons[i].tooltip_text = "%s - Dadu %d\nKlik: otomatis | Tahan: pilih target" % [skill.name, board.remainingDice[skill_die]]
 		portrait.ring_color = Color("ff414b") if action == "attack" else (Color("27da79") if action == "skill" else GOLD)
-		var blocked := action == "blocked" or hero.IsInHome
+		var blocked := (action == "blocked" and skill_die < 0) or hero.IsInHome
 		portrait.shade.color = Color(0, 0, 0, 0.68) if blocked else (Color(1, 0.06, 0.09, 0.40) if hero.Health * 3 <= hero.MaxHealth else Color.TRANSPARENT)
 		var caption := "Kocok dadu" if action == "roll" else ("Serang" if action == "attack" else ("Gunakan skill" if action == "skill" else ("Jalankan" if action == "move" else "Tidak ada langkah")))
 		portrait.tooltip_text = "%s - %s" % [hero.HeroId, "Selesai" if hero.IsInHome else caption]
+		if hero.SkillCooldown > 0:
+			portrait.tooltip_text += "\nSkill cooldown: %d giliran" % hero.SkillCooldown
+
+func _skill_die(hero: Piece) -> int:
+	if not board.IsHumanTurn() or GameManager.GameCurrentState != GameManager.GameStateEnum.PlayerSelectPiece:
+		return -1
+	return board.skills.die_for(hero)
+
+func _use_hero_skill(index: int, manual_targets: bool) -> void:
+	if get_tree().paused or index < 0 or index >= recommendations.size():
+		return
+	var hero := recommendations[index]
+	var die_index := _skill_die(hero)
+	if die_index < 0:
+		return
+	board.ManualAction.emit()
+	GameManager.HeroInspected.emit(hero)
+	var targets: Array[Piece] = []
+	if manual_targets:
+		targets = await skill_target_picker.choose(hero, board.skills)
+		if targets.is_empty():
+			return
+	await board.skills.cast(hero, die_index, targets, true)
+	_refresh_recommendations()
 
 # The preview and click resolve the same die, including pair summons.
 func _hero_die(hero: Piece) -> int:
@@ -482,7 +543,7 @@ func _hero_action(hero: Piece) -> String:
 		return "roll"
 	var die_index := _hero_die(hero)
 	if die_index < 0:
-		return "blocked"
+		return "skill" if _skill_die(hero) >= 0 else "blocked"
 	var target := 0
 	if not hero.IsInLobby():
 		var route := hero.GetMovementPath(board.remainingDice[die_index])
@@ -491,13 +552,12 @@ func _hero_action(hero: Piece) -> String:
 		target = route.back()
 	var cell := board.way_points.GetWayPoint(target, hero.CurrentPlayerColor)
 	if cell == null or cell.isThisSafePlace or cell.IsThisHomePlace:
-		return "move"
+		return "skill" if _skill_die(hero) >= 0 else "move"
 	# Use the same landing-cell target search as combat, including class range
 	# and safe targets. Never infer attack range from the hero's starting tile.
 	if hero.Attack > 0 and cell._find_capturable_opponent(hero) != null:
 		return "attack"
-	# Active skills are not implemented yet. Reserve the green ring for their action.
-	return "move"
+	return "skill" if _skill_die(hero) >= 0 else "move"
 
 func _inspect_recommendation(index: int) -> void:
 	if get_tree().paused or board.item_choice.stage != null:

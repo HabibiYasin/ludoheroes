@@ -17,6 +17,7 @@ var selectedDiceIndex: int = -1
 var attack_presentation: CanvasLayer
 var item_choice: CanvasLayer
 var move_preview: Node2D
+var skills: Node
 signal ItemHeroInspected(hero: Piece)
 signal HeroMoveStarted(hero: Piece)
 var currentRound: int = 1
@@ -30,6 +31,8 @@ signal ManualAction
 signal TurnFinished(color: GameManager.PlayerColor)
 
 func _ready() -> void:
+	skills = preload("res://Scripts/SkillManager.gd").new()
+	add_child(skills)
 	attack_presentation = preload("res://Scripts/AttackPresentation.gd").new()
 	add_child(attack_presentation)
 	item_choice = preload("res://Scripts/ItemChoice.gd").new()
@@ -100,7 +103,7 @@ func SelectDie(index: int) -> void:
 func _prepare_next_die() -> void:
 	var path_count := GetPathCount(currentPlayerColor)
 	for index in range(remainingDice.size()):
-		if remainingDice[index] > 0 and piecesManager.HasLegalMove(currentPlayerColor, remainingDice[index], path_count):
+		if remainingDice[index] > 0 and (piecesManager.HasLegalMove(currentPlayerColor, remainingDice[index], path_count) or skills.has_action(remainingDice[index])):
 			selectedDiceIndex = index
 			currentDiceValue = remainingDice[index]
 			DiceSelectionChanged.emit(remainingDice, selectedDiceIndex)
@@ -113,9 +116,9 @@ func _complete_die() -> void:
 	remainingDice[selectedDiceIndex] = 0
 	_prepare_next_die()
 
-func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -> void:
+func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false, skill_route: Array[int] = [], shortcut: bool = false, skill_distance: int = 0) -> void:
 	var pair_allowed := use_pair and CanSummonWithPair() and moveThisPiece.IsInLobby() and moveThisPiece.CanSummonWithStatuses()
-	if not pair_allowed and not moveThisPiece.CanMoveWithDice(dice_value, GetPathCount(moveThisPiece.CurrentPlayerColor)):
+	if skill_route.is_empty() and not pair_allowed and not moveThisPiece.CanMoveWithDice(dice_value, GetPathCount(moveThisPiece.CurrentPlayerColor)):
 		return
 	HeroMoveStarted.emit(moveThisPiece)
 	GameManager.UpdateGameCurrentState(GameManager.GameStateEnum.Null)
@@ -143,7 +146,7 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 		_complete_die()
 		return
 
-	var route := moveThisPiece.GetMovementPath(dice_value)
+	var route := moveThisPiece.GetMovementPath(dice_value) if skill_route.is_empty() else skill_route
 	var target_position: int = route.back()
 
 	# Exact roll is required to reach the last/home waypoint.
@@ -159,7 +162,14 @@ func MovePieces(dice_value: int, moveThisPiece: Piece, use_pair: bool = false) -
 
 	var steps_walked := 0
 	var last_step := moveThisPiece.CurrentPosition
+	if shortcut:
+		var jump := create_tween()
+		jump.tween_property(moveThisPiece, "position", way_points.GetPositionOfThisPoint(target_position, moveThisPiece.CurrentPlayerColor), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+		await jump.finished
+		steps_walked = skill_distance if skill_distance > 0 else route.size()
 	for route_index in range(route.size()):
+		if shortcut:
+			break
 		var step := route[route_index]
 		if step != last_step:
 			steps_walked += 1

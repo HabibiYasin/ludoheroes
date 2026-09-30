@@ -37,7 +37,8 @@ func _ready() -> void:
 	var yellow := board.piecesManager.YellowPieces
 	var yellow_progress := 0
 	for piece in yellow.Pieces:
-		if piece.CurrentPosition == 3:
+		# Runner and a random spawn item can both increase this die's distance.
+		if not piece.IsInLobby() and piece.CurrentPosition == piece.GetMoveDistance(3):
 			yellow_progress += 1
 	assert(yellow_progress == 1)
 	for group: PlayerPiecesGroup in [board.piecesManager.BluePieces, board.piecesManager.RedPieces]:

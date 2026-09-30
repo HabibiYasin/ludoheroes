@@ -9,7 +9,7 @@ const HEROES := {
 	"Anata": ["Support", "Astherion", 0, 5, 0, 0],
 	"Kaelgrave": ["Warrior", "Nekravia", 2, 3, 0, 0],
 	"Nyssara": ["Assassin", "Nekravia", 3, 2, 0, 0],
-	"Vilmira": ["Warrior - mage", "Nekravia", 2, 3, 0, 0],
+	"Vilmira": ["Mage", "Nekravia", 2, 3, 0, 0],
 	"Zyrella": ["Runner", "Nekravia", 2, 3, 0, 0],
 	"Silvy": ["Ranger", "Thornvale", 3, 2, 0, 0],
 	"Garruk": ["Tank", "Thornvale", 1, 4, 0, 0],

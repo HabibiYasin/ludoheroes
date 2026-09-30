@@ -26,10 +26,19 @@ func SetPiece(piece: Piece) -> void:
 	HealFriends(piece)
 	var captured_piece := _find_capturable_opponent(piece)
 	var direct := captured_piece != null and myHoldings.has(captured_piece)
-	if captured_piece != null and piece.Attack > 0 and boardManager != null:
-		var battle_cell: WayPoint = self if direct else captured_piece.CurrentWayPoint
-		boardManager.attack_presentation.queue_attack(piece, captured_piece, captured_piece.GetIncomingDamage(piece.Attack, direct), battle_cell)
-	if captured_piece != null and captured_piece.TakeDamage(piece.Attack, direct, Piece.DamageType.PHYSICAL, piece):
+	var attack_hits := 2 if piece.HasStatus("Hidden") else 1
+	var defeated := false
+	if captured_piece != null and piece.Attack > 0:
+		piece.RemoveStatus("Hidden")
+		var health_before := captured_piece.Health
+		for hit in range(attack_hits):
+			defeated = captured_piece.TakeDamage(piece.Attack, direct, Piece.DamageType.PHYSICAL, piece)
+			if defeated or piece.Health <= 0:
+				break
+		if boardManager != null:
+			var battle_cell: WayPoint = self if direct else captured_piece.CurrentWayPoint
+			boardManager.attack_presentation.queue_attack(piece, captured_piece, health_before - captured_piece.Health, battle_cell)
+	if defeated:
 		piece.RecordKill()
 		if captured_piece.CurrentWayPoint != null:
 			captured_piece.CurrentWayPoint.RemoveMyRef(captured_piece)
@@ -114,7 +123,7 @@ func _find_capturable_opponent(incoming_piece: Piece) -> Piece:
 		if cell.isThisSafePlace or cell.IsThisHomePlace:
 			continue
 		for item: Piece in cell.myHoldings:
-			if item == incoming_piece or item.CurrentPlayerColor == incoming_piece.CurrentPlayerColor or item.Health <= 0 or item.IsInHome:
+			if item == incoming_piece or item.CurrentPlayerColor == incoming_piece.CurrentPlayerColor or item.Health <= 0 or item.IsInHome or item.HasStatus("Hidden"):
 				continue
 			if target == null or (item.Health < target.Health if lowest else item.Health > target.Health):
 				target = item
