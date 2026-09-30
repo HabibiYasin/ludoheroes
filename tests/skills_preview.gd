@@ -27,9 +27,9 @@ func _ready() -> void:
 		board.skills.cast(caster, 0)
 		mode = "announcement" if "--announcement" in args else "battle"
 		if mode == "battle":
-			while board.attack_presentation.stage == null:
+			while board.attack_presentation.stage == null or board.attack_presentation.stage.name != "SkillBattle":
 				await get_tree().process_frame
-			await get_tree().create_timer(0.3).timeout
+			await get_tree().create_timer(0.65).timeout
 		else:
 			await get_tree().create_timer(0.2).timeout
 	if "--capture" in args:

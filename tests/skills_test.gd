@@ -23,6 +23,7 @@ func _reset(id: String) -> void:
 	for hero in heroes:
 		hero.SendBackToLobby()
 		hero.SkillCooldown = 0
+		hero.SkillCooldownAwaitingFirstTurn = false
 		hero.MaxHealth = 20
 		hero.Health = 20
 		hero.SkillDamage = 0
@@ -52,7 +53,14 @@ func _cast(die: int, selected: Array[Piece] = []) -> void:
 	assert(board.skills.can_use(caster, die))
 	var previous_position := caster.CurrentPosition
 	var skill: Dictionary = board.skills.definition(caster)
+	var scenes: Array[String] = []
+	var track_scene := func(node: Node):
+		if node.name in ["SkillAnnouncement", "SkillBattle"]:
+			scenes.append(String(node.name))
+	board.attack_presentation.child_entered_tree.connect(track_scene)
 	assert(await board.skills.cast(caster, 0, selected))
+	board.attack_presentation.child_entered_tree.disconnect(track_scene)
+	assert(scenes == (["SkillAnnouncement", "SkillBattle"] if skill.effect == "damage" else ["SkillAnnouncement"]))
 	assert(board.remainingDice == [0, 6])
 	assert(caster.SkillCooldown == skill.cooldown)
 	assert(not board.skills.can_use(caster, die))
@@ -77,6 +85,9 @@ func _run() -> void:
 	caster.EndStatusTurn()
 	assert(caster.SkillCooldown == 2)
 	caster.BeginStatusTurn()
+	assert(caster.SkillCooldown == 2 and not board.skills.can_use(caster, 1))
+	caster.EndStatusTurn()
+	caster.BeginStatusTurn()
 	assert(caster.SkillCooldown == 1 and not board.skills.can_use(caster, 1))
 	caster.EndStatusTurn()
 	caster.BeginStatusTurn()
@@ -94,8 +105,11 @@ func _run() -> void:
 	caster.TakeDamage(999)
 	assert(caster.Health == 20 and not caster.HasStatus("Shield"))
 	caster.BeginStatusTurn()
+	assert(caster.SkillCooldown == 1 and not board.skills.can_use(caster, 2))
 	caster.EndStatusTurn()
-	assert(caster.SkillCooldown == 0)
+	assert(caster.SkillCooldown == 1)
+	caster.BeginStatusTurn()
+	assert(caster.SkillCooldown == 0 and board.skills.can_use(caster, 2))
 	_reset("Anata")
 	targets = _targets([18, 20], true)
 	await _cast(6)
@@ -105,6 +119,8 @@ func _run() -> void:
 	for target in targets:
 		target.ApplyStatus("Shield")
 	assert(board.skills.candidates(caster) == [caster])
+	caster.BeginStatusTurn()
+	caster.EndStatusTurn()
 	caster.BeginStatusTurn()
 	await _cast(6)
 	assert(caster.HasStatus("Shield") and board.skills.candidates(caster).is_empty())

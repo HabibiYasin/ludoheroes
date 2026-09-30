@@ -11,6 +11,7 @@ signal StatsChanged
 const StatusCatalog = preload("res://Scripts/HeroStatus.gd")
 var Status = StatusCatalog.new()
 var SkillCooldown: int = 0
+var SkillCooldownAwaitingFirstTurn := false
 var NatureShieldStunnedThisTurn := false
 
 func ApplyStatus(id: String, turns: int = -1) -> bool:
@@ -33,7 +34,10 @@ func ClearStatuses() -> void:
 func BeginStatusTurn() -> void:
 	Status.moved_this_turn = false
 	NatureShieldStunnedThisTurn = false
-	if SkillCooldown > 0:
+	# The next owner turn is the first full locked turn, not time already served.
+	if SkillCooldownAwaitingFirstTurn:
+		SkillCooldownAwaitingFirstTurn = false
+	elif SkillCooldown > 0:
 		SkillCooldown -= 1
 	StatsChanged.emit()
 
@@ -146,6 +150,7 @@ var MagicalDefense: int = 0:
 
 func InitializeStats() -> void:
 	SkillCooldown = 0
+	SkillCooldownAwaitingFirstTurn = false
 	NatureShieldStunnedThisTurn = false
 	ClearStatuses()
 	MatchScore = 0

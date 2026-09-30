@@ -10,31 +10,50 @@ const BATTLE_BACKGROUNDS := {
 var pending: Array[Dictionary] = []
 var stage: Control
 
-func show_skill_name(skill_name: String) -> void:
-	var cover := ColorRect.new()
-	cover.name = "SkillAnnouncement"
-	cover.color = Color(0.03, 0.02, 0.09, 0.65)
-	cover.size = get_viewport().get_visible_rect().size
-	cover.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(cover)
+func _skill_title(skill_name: String, top: float, font_size: int) -> Label:
 	var title := Label.new()
+	title.name = "SkillTitle"
 	title.text = skill_name
+	title.position = Vector2(30, top)
+	title.size = Vector2(940, 160)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.add_theme_font_size_override("font_size", int(76 * minf(cover.size.x / 1920.0, cover.size.y / 1080.0)))
-	title.add_theme_color_override("font_color", Color("ffe49b"))
-	title.add_theme_color_override("font_outline_color", Color("261237"))
+	var font := title.get_theme_font("font")
+	while font_size > 36 and font.get_string_size(skill_name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > 920:
+		font_size -= 2
+	title.add_theme_font_size_override("font_size", font_size)
+	title.add_theme_color_override("font_color", Color("5549a5"))
+	title.add_theme_color_override("font_outline_color", Color("eee5cb"))
 	title.add_theme_constant_override("outline_size", 8)
-	cover.add_child(title)
-	title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	cover.modulate.a = 0.0
+	stage.add_child(title)
+	return title
+
+func show_skill_name(caster: Piece, skill_name: String) -> void:
+	stage = Control.new()
+	stage.name = "SkillAnnouncement"
+	stage.size = Vector2(1000, 1000)
+	stage.clip_contents = true
+	stage.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(stage)
+	_process(0.0)
+	var cover := ColorRect.new()
+	cover.name = "WhiteVeil"
+	cover.color = Color(1, 1, 1, 0.5)
+	cover.size = stage.size
+	stage.add_child(cover)
+	_skill_title(skill_name, 190, 90)
+	var hero := _hero(caster.PieceSprite.texture, Vector2(500, 600))
+	hero.name = "SkillCaster"
+	hero.scale *= 1.5
+	stage.modulate.a = 0.0
 	var animation := create_tween()
-	animation.tween_property(cover, "modulate:a", 1.0, 0.15)
-	animation.tween_interval(0.65)
-	animation.tween_property(cover, "modulate:a", 0.0, 0.15)
+	animation.tween_property(stage, "modulate:a", 1.0, 0.2)
+	animation.tween_interval(1.15)
+	animation.tween_property(stage, "modulate:a", 0.0, 0.2)
 	await animation.finished
-	cover.queue_free()
+	remove_child(stage)
+	stage.queue_free()
+	stage = null
 
 func play_skill(caster: Piece, skill_name: String, targets: Array[Dictionary]) -> void:
 	if targets.is_empty():
@@ -53,24 +72,15 @@ func play_skill(caster: Piece, skill_name: String, targets: Array[Dictionary]) -
 	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	background.size = stage.size
 	stage.add_child(background)
-	var title := Label.new()
-	title.text = skill_name
-	title.position = Vector2(30, 35)
-	title.size = Vector2(940, 140)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.add_theme_font_size_override("font_size", 60)
-	title.add_theme_color_override("font_color", Color("ffe49b"))
-	title.add_theme_color_override("font_outline_color", Color.BLACK)
-	title.add_theme_constant_override("outline_size", 7)
-	stage.add_child(title)
+	_skill_title(skill_name, 20, 140)
 	var attacker := _hero(caster.PieceSprite.texture, Vector2(220, 540))
 	attacker.name = "SkillCaster"
 	var columns := 1 if targets.size() == 1 else 2
 	var rows := ceili(float(targets.size()) / columns)
-	var spacing_y := minf(300, 690.0 / rows)
-	var size_limit := minf(260, spacing_y * 0.85)
+	var spacing_y := minf(310, 670.0 / rows)
+	var size_limit := minf(340 if targets.size() == 1 else 250, spacing_y * 0.72 if rows > 1 else 340)
 	var effects: Array[AnimatedSprite2D] = []
+	var numbers: Array[Label] = []
 	for index in range(targets.size()):
 		var record := targets[index]
 		var center := Vector2(720 if columns == 1 else 580 + (index % columns) * 260, 540 + (index / columns - (rows - 1) * 0.5) * spacing_y)
@@ -78,6 +88,7 @@ func play_skill(caster: Piece, skill_name: String, targets: Array[Dictionary]) -
 		target.name = "SkillTarget%d" % index
 		target.scale = Vector2.ONE * size_limit / maxf(record.texture.get_width(), record.texture.get_height())
 		var slash := AnimatedSprite2D.new()
+		slash.visible = false
 		slash.sprite_frames = SLASHES
 		slash.position = center
 		var frame_size := SLASHES.get_frame_texture(caster.Faction, 0).get_size()
@@ -85,25 +96,36 @@ func play_skill(caster: Piece, skill_name: String, targets: Array[Dictionary]) -
 		stage.add_child(slash)
 		effects.append(slash)
 		var label := Label.new()
+		label.name = "SkillDamage%d" % index
 		label.text = "-%d" % record.damage if record.damage > 0 else String(record.get("effect", "0"))
 		label.position = center + Vector2(-100, -size_limit * 0.6)
 		label.size.x = 200
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size", 46)
+		label.add_theme_font_size_override("font_size", 90 if targets.size() == 1 else mini(64, int(spacing_y * 0.3)))
+		label.add_theme_color_override("font_color", Color("ff3038"))
 		label.add_theme_color_override("font_outline_color", Color.BLACK)
 		label.add_theme_constant_override("outline_size", 6)
 		stage.add_child(label)
+		label.modulate.a = 0.0
+		numbers.append(label)
 	var lunge := create_tween()
-	lunge.tween_property(attacker, "position:x", 360.0, 0.2)
+	lunge.tween_interval(0.35)
+	lunge.tween_property(attacker, "position:x", 300.0, 0.2)
 	await lunge.finished
 	for effect in effects:
+		effect.show()
 		effect.play(caster.Faction)
+	for number in numbers:
+		number.modulate.a = 1.0
+		create_tween().tween_property(number, "position:y", number.position.y - 25.0, 0.45)
 	GameAudio.play_attack()
 	await effects.back().animation_finished
 	var finish := create_tween()
-	finish.tween_interval(0.2)
+	finish.tween_property(attacker, "position:x", 220.0, 0.2)
+	finish.tween_interval(0.65)
 	finish.tween_property(stage, "modulate:a", 0.0, 0.25)
 	await finish.finished
+	remove_child(stage)
 	stage.queue_free()
 	stage = null
 

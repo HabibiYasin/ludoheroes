@@ -146,8 +146,9 @@ func cast(hero: Piece, die_index: int, chosen: Array[Piece] = [], manual: bool =
 		board.ManualAction.emit()
 	board.HeroMoveStarted.emit(hero)
 	hero.SkillCooldown = int(data.cooldown)
+	hero.SkillCooldownAwaitingFirstTurn = hero.SkillCooldown > 0
 	hero.StatsChanged.emit()
-	await board.attack_presentation.show_skill_name(data.name)
+	await board.attack_presentation.show_skill_name(hero, data.name)
 	if data.effect in ["move", "shortcut"]:
 		await board.MovePieces(board.currentDiceValue, hero, false, movement_path(hero), data.effect == "shortcut", int(data.distance))
 		return true
@@ -193,7 +194,7 @@ func cast(hero: Piece, die_index: int, chosen: Array[Piece] = [], manual: bool =
 		if hero.Health <= 0 and not defeated.has(hero):
 			target.RecordKill()
 			defeated.append(hero)
-	if data.team == "enemy":
+	if data.effect == "damage":
 		await board.attack_presentation.play_skill(hero, data.name, records)
 	for fallen: Piece in defeated:
 		fallen.SendBackToLobby()

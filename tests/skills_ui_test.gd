@@ -29,6 +29,11 @@ func _run() -> void:
 	_input_button(book, true)
 	_input_button(book, false)
 	assert(tank.SkillCooldown == 1 and GameManager.GameCurrentState == GameManager.GameStateEnum.Null)
+	var intro: Control = board.attack_presentation.stage
+	assert(intro.name == "SkillAnnouncement" and intro.size == Vector2(1000, 1000))
+	assert(intro.get_node("WhiteVeil").color == Color(1, 1, 1, 0.5))
+	assert(intro.get_node("SkillCaster").texture == tank.PieceSprite.texture)
+	assert(intro.get_node("SkillTitle").text == "Iron Bulwark")
 	while GameManager.GameCurrentState == GameManager.GameStateEnum.Null:
 		await get_tree().process_frame
 	assert(tank.CurrentPosition == position_before and tank.HasStatus("Shield"))

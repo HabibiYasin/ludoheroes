@@ -14,8 +14,10 @@ cooldown, and eligible targets permit a cast.
   matching die. The book tooltip identifies the die it will consume.
 
 Target selection pauses the game and idle countdown. It validates targets again
-before casting. Cooldown decreases at the start of the owner's next turn: cooldown
-1 is available next owner turn, cooldown 2 on the second next owner turn. Cooldown
+before casting. Cooldown counts full future turns of the caster's owner that must
+be skipped. A cooldown-1 skill cast in A1 is locked throughout A2 and available in
+A3; cooldown 2 locks A2 and A3, becoming available in A4. The first following owner
+turn retains the full counter; subsequent owner-turn starts decrease it. Cooldown
 survives defeat and cannot be bypassed by respawning. A visible CD badge and hero
 skill tooltip show remaining cooldown.
 
@@ -76,9 +78,13 @@ status damage counts four steps, not the number of skipped path cells. Both
 movement skills retain landing combat, item rewards, finish scoring, and death
 cleanup. Frozen and Stun prevent these movement skills.
 
-Each cast announces the skill name in the screen center. Offensive skills then
-show the existing faction battlefield, caster, and all affected targets together,
-using the existing attack effects. Bot and idle play can also select legal skills.
+Each cast first covers only the board with a 50% white veil and displays a large
+caster sprite beneath the skill title for 1.15 seconds, plus entrance/exit fades.
+Only direct-damage skills continue into a battlefield: the larger title stays at
+the top, caster on the left, and all affected targets on the right. Existing attack
+effects and red damage numbers appear together over each target. Buffs, debuffs,
+and movement skills finish the introduction and resolve on the board (movement
+may still trigger ordinary landing combat). Bot and idle play use the same flow.
 
 Validation scenes: `tests/skills_test.tscn` and `tests/skills_ui_test.tscn`.
 Interactive demonstration: `tests/skills_preview.tscn` (Octavus with four targets).
